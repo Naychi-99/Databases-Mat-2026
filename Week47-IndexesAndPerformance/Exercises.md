@@ -25,7 +25,7 @@ SELECT * FROM order_items WHERE order_id = 42;
 SELECT * FROM orders WHERE customer_id = 7;
 
 -- Query D: Get products in a category
-SELECT * FROM products WHERE category_id = 3;
+SELECT * FROM product_categories WHERE category_id = 3;
 
 -- Query E: Join order_items to products
 SELECT oi.quantity, p.name, p.price
@@ -53,7 +53,7 @@ CREATE INDEX idx_product_name ON products (name);
 CREATE INDEX idx_order_item_order_id ON order_items (order_id);
 CREATE INDEX idx_order_item_product_id ON order_items (product_id);
 CREATE INDEX idx_orders_customer_id ON orders (customer_id);
-CREATE INDEX idx_products_category_id ON products (category_id);
+CREATE INDEX idx_product_categories_category_id ON product_categories (category_id);
 ```
 
 ### Step 3 — Re-measure
@@ -342,8 +342,9 @@ SELECT * FROM products WHERE price BETWEEN 50 AND 100;
 ```sql
 SELECT p.name, c.name AS category
 FROM products p
-JOIN categories c ON c.id = p.category_id
-WHERE p.category_id = 2;
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
+WHERE pc.category_id = 2;
 ```
 
 **Query 6**
@@ -434,7 +435,12 @@ CREATE INDEX idx_oi_order_id ON order_items (order_id);
 
 ```sql
 -- Query
-SELECT * FROM products WHERE category_id = 2 AND price < 80;
+SELECT * FROM products p
+JOIN product_categories pc ON pc.product_id = p.product_id
+WHERE pc.category_id = 2 AND p.price < 80;
+
+CREATE INDEX idx_product_categories_category_id ON product_categories (category_id);
+CREATE INDEX idx_products_price ON products (price);
 
 -- Index to create
 CREATE INDEX idx_products_cat_price ON products (category_id, price);

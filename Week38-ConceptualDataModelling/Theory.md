@@ -26,6 +26,7 @@ By the end of this chapter you will be able to:
 - Read and apply cardinality and participation constraints
 - Draw ER diagrams using crow's foot notation
 - Resolve many-to-many relationships using junction tables
+- Explain why TrailShop's Category–Product relationship was revised from 1:N (Week 37) to M:N
 - Apply ER diagram best practices
 
 ---
@@ -64,6 +65,33 @@ A conceptual model prevents these problems by forcing you to think about **what 
 *Database Design* (Watt & Eng), Chapter 5, introduces data modelling as "an iterative process" that begins at a high level of abstraction and is refined until it can be implemented. Chapter 13 describes the full database development process and places conceptual modelling as a critical early phase — one that feeds into logical design and ultimately physical implementation.
 
 The key insight: **conceptual modelling is technology-independent**. You don't think about PostgreSQL, MySQL, or Oracle at this stage. You think about the *business*.
+
+### 1.4 From Last Week's Tables to This Week's Model
+
+Last week (Week 37, Section 12.2) TrailShop treated **Category–Product as 1:N**:
+
+- One category has many products
+- Each product belongs to **exactly one** category
+- The foreign key sits on the product: `products.category_id`
+
+```
+Week 37:  Category ──||──────O<── Product     (category_id on Product)
+```
+
+That sketch was a useful starting point for learning keys and referential integrity. It is **not** enough for the real shop. A rain jacket can be both Clothing and Accessories. A single `category_id` column can store only one of those. Putting `"4, 5"` in one cell would violate atomicity (you will meet this as first normal form later).
+
+This week we **revise** that relationship to **M:N** and resolve it with a junction entity, **ProductCategory**. Products no longer store `category_id`.
+
+```
+Week 38:  Category ──||──────O<── ProductCategory ──>O──────||── Product
+```
+
+What stays the same:
+
+- **Customer–Order** is still 1:N (the FK remains on `orders`)
+- **Order–Product** is still M:N via **OrderItem** (Week 37 already introduced that junction)
+
+What changes for last week's FK-action work: the Category–Product foreign keys **move onto the junction**. Deleting a category no longer means "block the delete if products still point at it." It removes *links*; the products themselves survive. You will write the `CREATE TABLE` statements and `ON DELETE` actions in Week 39. Sections 10 and 12 fill in the ER details.
 
 ---
 
@@ -169,7 +197,7 @@ The warehouse team sees only low-stock products. They don't know (or care) about
 The single, unified description of all data in the organization. This is the "truth" — the complete model that all external schemas are derived from.
 
 For TrailShop, the conceptual schema would describe:
-- Categories, Products, Customers, Orders, and OrderItems as entities
+- Categories, Products, ProductCategories, Customers, Orders, and OrderItems as entities
 - All their attributes
 - All the relationships and constraints between them
 
@@ -242,7 +270,7 @@ ER diagrams serve as a **communication tool** between:
 - **Developers** who will write applications against the database
 - **Future maintainers** who need to understand the system
 
-An ER diagram is language- and technology-neutral. You can show it to TrailShop's founders and they can validate it: "Yes, one category has many products. Yes, one customer can place many orders."
+An ER diagram is language- and technology-neutral. You can show it to TrailShop's founders and they can validate it: "Yes, a product can sit in several categories. Yes, one customer can place many orders."
 
 ---
 
@@ -301,7 +329,7 @@ An entity that can exist on its own, without requiring any relationship to anoth
 In TrailShop:
 - `Category` — exists independently; doesn't need products to exist
 - `Customer` — exists independently; doesn't need orders to exist
-- `Product` — exists independently (though it has a relationship to Category, it can be identified on its own)
+- `Product` — exists independently (it can be identified on its own even before it is assigned to any category)
 
 **Dependent Entity**
 An entity whose existence depends on one or more other entities. It cannot exist without the entity it depends on. Weak entities are a specific type of dependent entity.
@@ -444,7 +472,7 @@ For weak entities, the key attribute is a **partial key** — it only uniquely i
 A **relationship** is a meaningful association between two or more entities. Chapter 8 (Watt & Eng) defines a relationship type as a set of associations among entity types.
 
 In TrailShop:
-- A **Category** *contains* many **Products** → relationship between Category and Product
+- A **Category** *classifies* many **Products**, and a **Product** can belong to many **Categories** → M:N, resolved by ProductCategory
 - A **Customer** *places* an **Order** → relationship between Customer and Order
 - An **Order** *includes* **OrderItems** → relationship between Order and OrderItem
 
@@ -460,7 +488,7 @@ A **binary relationship** involves exactly two entity types. This is the most co
 
 Examples:
 - Customer **places** Order (two entities: Customer, Order)
-- Product **belongs to** Category (two entities: Product, Category)
+- Product **belongs to** Category (two entities: Product, Category — M:N, via ProductCategory)
 - Order **contains** OrderItem (two entities: Order, OrderItem)
 
 ### 7.3 Unary (Recursive) Relationships
@@ -515,8 +543,8 @@ This terminology is especially important when translating to the relational mode
 
 | Type | Foreign Key Is Part of PK? | Example |
 |---|---|---|
-| **Identifying** | Yes — FK is part of the child's primary key | `order_items.order_id` is both FK and part of PK |
-| **Non-identifying** | No — FK is just a regular column | `products.category_id` is FK but not part of PK |
+| **Identifying** | Yes — FK is part of the child's primary key | `order_items.order_id` is both FK and part of PK; same for `product_categories` |
+| **Non-identifying** | No — FK is just a regular column | `orders.customer_id` is FK but not part of PK |
 
 ---
 
@@ -531,8 +559,8 @@ The three fundamental cardinality types:
 | Cardinality | Meaning | TrailShop Example |
 |---|---|---|
 | **1:1** (One-to-One) | One A relates to at most one B, and vice versa | One customer has one loyalty profile |
-| **1:N** (One-to-Many) | One A relates to many Bs, but each B relates to only one A | One category has many products |
-| **M:N** (Many-to-Many) | One A relates to many Bs, and one B relates to many As | Many products appear in many orders |
+| **1:N** (One-to-Many) | One A relates to many Bs, but each B relates to only one A | One customer places many orders |
+| **M:N** (Many-to-Many) | One A relates to many Bs, and one B relates to many As | Many products belong to many categories; many products appear in many orders |
 
 ### 8.2 Mandatory vs Optional Participation
 
@@ -541,7 +569,7 @@ The three fundamental cardinality types:
 **Mandatory (Total Participation)**
 Every instance of the entity MUST participate in the relationship.
 
-- "Every product MUST belong to a category" → Product has mandatory participation in the Product-Category relationship
+- "Every product–category assignment MUST name an existing product and category" → ProductCategory has mandatory participation
 - "Every order item MUST be part of an order" → OrderItem has mandatory participation
 
 **Optional (Partial Participation)**
@@ -559,19 +587,21 @@ A precise way to express participation and cardinality is the **(min, max)** not
 Examples for TrailShop:
 
 ```
-Category (0,N) ──── contains ──── (1,1) Product
-```
-
-Reading this:
-- A Category participates in the "contains" relationship **0 to N** times → a category can have zero or many products
-- A Product participates in the "contains" relationship **1 to 1** times → every product belongs to exactly one category
-
-```
 Customer (0,N) ──── places ──── (1,1) Order
 ```
 
+Reading this:
 - A Customer places **0 to N** orders (optional, many possible)
 - An Order belongs to **1 and only 1** customer (mandatory, exactly one)
+
+```
+Category (0,N) ──── classifies ──── (0,N) Product
+```
+
+- A Category classifies **0 to N** products (a category may be empty)
+- A Product belongs to **0 to N** categories (a rain jacket can be both Clothing and Accessories)
+
+This last example is **M:N**. That is the revision from Section 1.4: Week 37 modelled Category–Product as 1:N; from this week onward it is many-to-many, resolved by a junction entity.
 
 ### 8.4 Reading Cardinality: The Two-Question Method
 
@@ -580,11 +610,17 @@ For any binary relationship, ask two questions:
 1. **"Given one A, how many Bs can it relate to?"** → This gives you the cardinality on the B side.
 2. **"Given one B, how many As can it relate to?"** → This gives you the cardinality on the A side.
 
+Example: Customer ↔ Order
+1. "Given one customer, how many orders can they place?" → **Many** (0 or more)
+2. "Given one order, how many customers does it belong to?" → **One** (exactly one)
+
+Result: Customer 1:N Order
+
 Example: Category ↔ Product
 1. "Given one category, how many products can it have?" → **Many** (0 or more)
-2. "Given one product, how many categories can it belong to?" → **One** (exactly one)
+2. "Given one product, how many categories can it belong to?" → **Many** (0 or more)
 
-Result: Category 1:N Product
+Result: Category M:N Product (resolved through ProductCategory)
 
 Example: Product ↔ Order
 1. "Given one product, how many orders can it appear in?" → **Many**
@@ -640,7 +676,7 @@ Here is every meaningful combination of endpoints between two entities A and B:
 | A side | B side | Relationship Type | Example |
 |---|---|---|---|
 | `──┤├──` (exactly one) | `──┤<──` (one or many) | 1:N mandatory both sides | Department has employees; every employee in a dept, every dept has ≥1 employee |
-| `──┤├──` (exactly one) | `──O<──` (zero or many) | 1:N mandatory A, optional B | Category has products; every product in a category, category may be empty |
+| `──┤├──` (exactly one) | `──O<──` (zero or many) | 1:N mandatory A, optional B | Customer places orders; every order has a customer, a customer may have none |
 | `──O├──` (zero or one) | `──O<──` (zero or many) | 1:N optional both sides | Manager manages employees; employee may have no manager, manager may have no reports |
 | `──┤├──` (exactly one) | `──┤├──` (exactly one) | 1:1 mandatory both sides | Country has capital; every country has one, every capital belongs to one country |
 | `──┤├──` (exactly one) | `──O├──` (zero or one) | 1:1 mandatory A, optional B | Employee has parking spot; every spot assigned, employee may lack one |
@@ -654,19 +690,19 @@ When reading a crow's foot diagram, always read **away from** the entity to dete
 
 ```
 ┌──────────┐                           ┌──────────┐
-│ Category │──────────┤├──────O<───────│ Product  │
+│ Customer │──────────┤├──────O<───────│  Order   │
 └──────────┘                           └──────────┘
 ```
 
-Reading from **Category** (left to right):
-- The symbols near Product are `O<` → zero or many
-- "One category relates to **zero or many** products"
+Reading from **Customer** (left to right):
+- The symbols near Order are `O<` → zero or many
+- "One customer relates to **zero or many** orders"
 
-Reading from **Product** (right to left):
-- The symbols near Category are `┤├` → exactly one
-- "One product belongs to **exactly one** category"
+Reading from **Order** (right to left):
+- The symbols near Customer are `┤├` → exactly one
+- "One order belongs to **exactly one** customer"
 
-Combined: "Each category can have zero or many products. Each product belongs to exactly one category." → This is a **1:N** relationship with mandatory participation on the Product side and optional on the Category side.
+Combined: "Each customer can have zero or many orders. Each order belongs to exactly one customer." → This is a **1:N** relationship with mandatory participation on the Order side and optional on the Customer side.
 
 ### 9.6 ASCII Crow's Foot Shorthand
 
@@ -682,10 +718,12 @@ In text-based diagrams (like in this material), we use these conventions:
 Example:
 
 ```
-Category ──||──────O<── Product
+Customer ──||──────O<── Order
 ```
 
-"Each product belongs to exactly one category. Each category has zero or many products."
+"Each order belongs to exactly one customer. Each customer has zero or many orders."
+
+Category–Product is **M:N**, so you do **not** draw a single 1:N line between them. Section 10 shows how to resolve it with a junction entity.
 
 ---
 
@@ -693,18 +731,40 @@ Category ──||──────O<── Product
 
 ### 10.1 The Problem
 
-A many-to-many relationship cannot be directly implemented in a relational database. Consider:
+Last week Category–Product was 1:N (`products.category_id`). Here is why that cannot stay, and how both of TrailShop's M:N relationships are resolved.
 
+A many-to-many relationship cannot be directly implemented in a relational database. TrailShop has two of them.
+
+**Category ↔ Product (the simpler case):**
+- One **Product** can belong to many **Categories** (a rain jacket is Clothing *and* Accessories)
+- One **Category** can contain many **Products**
+
+You can't put `category_id` in the `products` table (which category would you store when there are several?). You can't put `product_id` in the `categories` table (a category has many products).
+
+**Product ↔ Order (the same problem, plus extra data):**
 - One **Product** can appear in many **Orders**
 - One **Order** can contain many **Products**
-
-You can't put `order_id` in the `products` table (a product appears in many orders — which one would you store?). You can't put `product_id` in the `orders` table (an order has many products — which one would you store?).
 
 ### 10.2 The Solution: Junction Table
 
 You introduce a new entity — a **junction table** (also called an associative entity, bridge table, linking table, or intersection table) — that sits between the two entities and holds the foreign keys to both.
 
-For TrailShop, the junction table is **OrderItem**:
+**Pure junction — ProductCategory:**
+
+```
+┌──────────┐         ┌──────────────────┐         ┌──────────┐
+│ Category │──||──O<─┤ ProductCategory  ├─>O──||──│ Product  │
+└──────────┘         └──────────────────┘         └──────────┘
+```
+
+- Each Category has zero or many ProductCategory rows (a category may be empty)
+- Each ProductCategory belongs to exactly one Category
+- Each Product has zero or many ProductCategory rows (a product may not be categorised yet)
+- Each ProductCategory refers to exactly one Product
+
+The junction has **no extra attributes** — only the two foreign keys. Its job is to record that a product belongs to a category.
+
+**Attributed junction — OrderItem:**
 
 ```
 ┌──────────┐         ┌────────────┐         ┌──────────┐
@@ -717,10 +777,12 @@ For TrailShop, the junction table is **OrderItem**:
 - Each Product appears in zero or many OrderItems (a product may not have been ordered yet)
 - Each OrderItem refers to exactly one Product
 
-The junction table typically includes:
-- Foreign key to the first entity (`order_id`)
-- Foreign key to the second entity (`product_id`)
-- Any attributes specific to the relationship (`quantity`, `unit_price` at time of order)
+This junction **does** carry relationship attributes: `quantity` and `unit_price` at the time of the order. Those facts belong to the pairing of an order and a product, not to either entity alone.
+
+A junction table typically includes:
+- Foreign key to the first entity
+- Foreign key to the second entity
+- Any attributes specific to the relationship (none for ProductCategory; `quantity` and `unit_price` for OrderItem)
 
 ### 10.3 Junction Table Primary Key Options
 
@@ -728,9 +790,10 @@ Chapter 8 discusses two approaches:
 
 **Option A: Composite Primary Key**
 ```
-OrderItem PK = (order_id, product_id)
+ProductCategory PK = (product_id, category_id)
+OrderItem        PK = (order_id, product_id)
 ```
-This means a product can appear only once per order. If the customer wants 3 of the same item, you use a `quantity` column.
+This means a product can appear only once in a given category, and only once per order. If the customer wants 3 of the same item, you use a `quantity` column on OrderItem.
 
 **Option B: Surrogate Primary Key**
 ```
@@ -738,12 +801,14 @@ OrderItem PK = order_item_id (auto-generated)
 ```
 Plus a unique constraint on `(order_id, product_id)` if needed. This allows more flexibility but adds an extra column.
 
-For TrailShop, we'll use Option A (composite key) — it's cleaner and naturally prevents duplicate product lines in the same order.
+For TrailShop, we'll use Option A (composite key) for both junctions — it is cleaner and naturally prevents duplicate pairings.
 
 ### 10.4 More M:N Examples
 
 | Entity A | Entity B | Junction Table | Junction Attributes |
 |---|---|---|---|
+| Product | Category | ProductCategory | *(none — pure link)* |
+| Order | Product | OrderItem | quantity, unit_price |
 | Student | Course | Enrollment | enrollment_date, grade |
 | Actor | Movie | MovieCast | role_name, billing_order |
 | Doctor | Patient | Appointment | appointment_date, diagnosis |
@@ -763,10 +828,10 @@ For TrailShop, we'll use Option A (composite key) — it's cleaner and naturally
 **Attributes:**
 - Use **lowercase with underscores**: `first_name`, `order_date`, `unit_price`
 - Be descriptive: `date` is ambiguous; `order_date`, `ship_date`, `birth_date` are clear
-- Prefix foreign keys with the referenced table: `category_id` in `Product`
+- Prefix foreign keys with the referenced table: `category_id` and `product_id` in `ProductCategory`
 
 **Relationships:**
-- Use **active verbs**: "places" (Customer places Order), "contains" (Order contains OrderItem), "belongs to" (Product belongs to Category)
+- Use **active verbs**: "places" (Customer places Order), "contains" (Order contains OrderItem), "classifies" (Category classifies Product)
 - Read the relationship in both directions to verify it makes sense
 
 ### 11.2 Layout Tips
@@ -795,6 +860,8 @@ For TrailShop, we'll use Option A (composite key) — it's cleaner and naturally
 
 ## 12. The TrailShop ER Model — Complete
 
+As Section 1.4 explained, last week's sketch treated Category–Product as 1:N (each product had a single `category_id`). That cannot express a rain jacket that is both Clothing and Accessories. From this week onward the conceptual model is **M:N**, resolved by a **ProductCategory** junction entity. Products no longer store `category_id`.
+
 ### 12.1 Entities and Their Attributes
 
 Let's build the complete ER model for TrailShop's core business.
@@ -812,6 +879,11 @@ Let's build the complete ER model for TrailShop's core business.
 - `weight_kg` — product weight in kilograms (optional)
 - `stock_quantity` — current inventory count
 - `created_at` — when the product was added
+
+**ProductCategory** (Junction / associative entity — resolves Category M:N Product)
+- `product_id` (PK, FK) — references Product
+- `category_id` (PK, FK) — references Category
+- No other attributes — this is a pure link
 
 **Customer** (Strong Entity)
 - `customer_id` (PK) — unique identifier
@@ -831,7 +903,7 @@ Let's build the complete ER model for TrailShop's core business.
 - `status` — order status (e.g., "pending", "shipped", "delivered")
 - `shipping_address` — delivery address (could be composite)
 
-**OrderItem** (Weak Entity — depends on Order)
+**OrderItem** (Weak Entity — depends on Order; attributed junction for Order M:N Product)
 - `order_id` (PK, FK) — references Order
 - `product_id` (PK, FK) — references Product
 - `quantity` — number of units ordered
@@ -841,8 +913,10 @@ Let's build the complete ER model for TrailShop's core business.
 
 | Relationship | Entities | Cardinality | Participation |
 |---|---|---|---|
-| "belongs to" | Product → Category | N:1 | Mandatory (every product has a category) |
-| "contains" | Category → Product | 1:N | Optional (category may be empty) |
+| "classifies" | Category → ProductCategory | 1:N | Optional (category may be empty) |
+| "belongs to" | ProductCategory → Category | N:1 | Mandatory (identifying) |
+| "appears in" | Product → ProductCategory | 1:N | Optional (product may have no category yet) |
+| "references" | ProductCategory → Product | N:1 | Mandatory (identifying) |
 | "places" | Customer → Order | 1:N | Optional (customer may have no orders) |
 | "belongs to" | Order → Customer | N:1 | Mandatory (every order has a customer) |
 | "contains" | Order → OrderItem | 1:N | Mandatory (every order has ≥1 item) |
@@ -850,45 +924,43 @@ Let's build the complete ER model for TrailShop's core business.
 | "references" | OrderItem → Product | N:1 | Mandatory (every item is a product) |
 | "appears in" | Product → OrderItem | 1:N | Optional (product may not be ordered yet) |
 
+A product is not required to have a category at the database level. Enforcing "at least one category" would need an application rule or a trigger — a foreign key alone cannot require a child row to exist.
+
 ### 12.3 ASCII ER Diagram
 
 ```
-┌─────────────────┐         ┌─────────────────────┐
-│    CATEGORY      │         │      PRODUCT         │
-├─────────────────┤         ├─────────────────────┤
-│ category_id (PK)│         │ product_id (PK)      │
-│ category_name   │         │ name                 │
-│ description     │         │ description          │
-│                 │         │ price                │
-│                 │         │ weight_kg            │
-│                 │         │ stock_quantity       │
-│                 │         │ created_at           │
-│                 │         │ category_id (FK)     │
-└────────┬────────┘         └──────────┬──────────┘
-         │                             │
-         │  1          contains      N │
-         └─────────────────────────────┘
-
-┌─────────────────┐         ┌─────────────────────┐
-│    CUSTOMER      │         │       ORDER          │
-├─────────────────┤         ├─────────────────────┤
-│ customer_id (PK)│         │ order_id (PK)        │
-│ first_name      │         │ order_date           │
-│ last_name       │         │ status               │
-│ email           │         │ shipping_address     │
-│ phone           │         │ customer_id (FK)     │
-│ street          │         │                      │
-│ city            │         └──────────┬───────────┘
-│ postal_code     │                    │
-│ country         │                    │ 1
-│ registered_at   │                    │ contains
-│                 │                    │ N
-└────────┬────────┘         ┌──────────┴───────────┐
-         │                  │     ORDER_ITEM        │
-         │  1    places   N │ (weak entity)         │
-         └─────────────────>├──────────────────────┤
-                            │ order_id (PK, FK)    │
-                            │ product_id (PK, FK)  │
+┌─────────────────┐         ┌──────────────────────┐         ┌─────────────────────┐
+│    CATEGORY      │         │  PRODUCT_CATEGORY     │         │      PRODUCT         │
+├─────────────────┤         ├──────────────────────┤         ├─────────────────────┤
+│ category_id (PK)│         │ product_id (PK, FK)  │         │ product_id (PK)      │
+│ category_name   │         │ category_id (PK, FK) │         │ name                 │
+│ description     │         │                      │         │ description          │
+└────────┬────────┘         └──────────┬───────────┘         │ price                │
+         │                             │                     │ weight_kg            │
+         │  1        classifies      N │                     │ stock_quantity       │
+         └─────────────────────────────┘                     │ created_at           │
+                                                             └──────────┬──────────┘
+                                                                        │
+┌─────────────────┐         ┌─────────────────────┐                     │
+│    CUSTOMER      │         │       ORDER          │                     │
+├─────────────────┤         ├─────────────────────┤                     │
+│ customer_id (PK)│         │ order_id (PK)        │                     │
+│ first_name      │         │ order_date           │                     │
+│ last_name       │         │ status               │                     │
+│ email           │         │ shipping_address     │                     │
+│ phone           │         │ customer_id (FK)     │                     │
+│ street          │         │                      │                     │
+│ city            │         └──────────┬───────────┘                     │
+│ postal_code     │                    │                                 │
+│ country         │                    │ 1                               │
+│ registered_at   │                    │ contains                        │
+│                 │                    │ N                               │
+└────────┬────────┘         ┌──────────┴───────────┐                     │
+         │                  │     ORDER_ITEM        │                     │
+         │  1    places   N │ (weak entity)         │                     │
+         └─────────────────>├──────────────────────┤                     │
+                            │ order_id (PK, FK)    │                     │
+                            │ product_id (PK, FK)  │<────────────────────┘
                             │ quantity             │
                             │ unit_price           │
                             └──────────────────────┘
@@ -897,14 +969,14 @@ Let's build the complete ER model for TrailShop's core business.
 **Complete relationships with crow's foot:**
 
 ```
-Category ──||──────O<── Product
+Category ──||──────O<── ProductCategory ──>O──────||── Product
 Customer ──||──────O<── Order
 Order    ──||──────|<── OrderItem
 Product  ──||──────O<── OrderItem
 ```
 
 Reading:
-- "Each product belongs to exactly one category. Each category has zero or many products."
+- "Each product–category link belongs to exactly one category and exactly one product. A category may have zero or many products. A product may belong to zero or many categories."
 - "Each order belongs to exactly one customer. Each customer has zero or many orders."
 - "Each order item belongs to exactly one order. Each order has one or many order items."
 - "Each order item references exactly one product. Each product appears in zero or many order items."
@@ -913,15 +985,19 @@ Reading:
 
 Chapter 13 (Watt & Eng) provides guidelines for database design projects. Here are our key design decisions:
 
-1. **Why `unit_price` in OrderItem?** — Product prices change over time. We store the price *at the time of the order* to preserve historical accuracy. If we just referenced the current product price, old orders would show wrong totals.
+1. **Why a ProductCategory junction?** — A product can belong to several categories. A 1:N foreign key on Product cannot store that. The junction has no extra attributes; it only records the pairing.
 
-2. **Why composite PK for OrderItem?** — `(order_id, product_id)` naturally prevents the same product appearing twice in one order. The `quantity` attribute handles "3 of the same item."
+2. **Why `unit_price` in OrderItem?** — Product prices change over time. We store the price *at the time of the order* to preserve historical accuracy. If we just referenced the current product price, old orders would show wrong totals.
 
-3. **Why is `phone` optional?** — Not every customer provides a phone number. Business rule: phone is nice-to-have, not required.
+3. **Why composite PK for both junctions?** — `(product_id, category_id)` prevents the same product being listed twice in one category. `(order_id, product_id)` prevents the same product appearing twice in one order. The `quantity` attribute handles "3 of the same item."
 
-4. **Why separate Category entity?** — Instead of storing category name as a text field in Product, a separate entity avoids data redundancy and ensures consistent naming.
+4. **Why is `phone` optional?** — Not every customer provides a phone number. Business rule: phone is nice-to-have, not required.
 
-5. **Why `weight_kg` is optional?** — Some products (like gift cards or digital items) might not have a meaningful weight.
+5. **Why separate Category entity?** — Instead of storing category names as a text field (or a comma-separated list) in Product, a separate entity plus a junction avoids redundancy and keeps names consistent.
+
+6. **Why `weight_kg` is optional?** — Some products (like gift cards or digital items) might not have a meaningful weight.
+
+7. **Why is a product allowed to have zero categories?** — Foreign keys can require that *if* a link exists it is valid, but they cannot require that a child row exists. "At least one category" would need a trigger or an application check.
 
 ---
 
@@ -985,6 +1061,6 @@ You've learned to think before building. Before writing a single `CREATE TABLE` 
 
 You can classify entities (strong vs weak, independent vs dependent vs characteristic), attributes (simple, composite, multivalued, derived, key), and relationships (binary, unary, ternary, identifying vs non-identifying). You know how to read and apply cardinality constraints using crow's foot notation, and you know that many-to-many relationships must be resolved through junction tables.
 
-Most importantly, you've built a complete ER model for TrailShop — five entities with all their attributes and relationships mapped out. This model is your blueprint.
+Most importantly, you've built a complete ER model for TrailShop — six entities (including the ProductCategory junction) with all their attributes and relationships mapped out. This model is your blueprint.
 
 **Next week:** You'll take this blueprint and transform it into actual PostgreSQL tables. You'll learn the transformation rules that convert an ER diagram into a relational schema, choose data types, define constraints, and write the `CREATE TABLE` statements that bring TrailShop's database to life.

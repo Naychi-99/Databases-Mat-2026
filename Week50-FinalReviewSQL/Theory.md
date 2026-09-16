@@ -387,12 +387,14 @@ Joins combine rows from two or more tables based on a related column.
 -- INNER JOIN
 SELECT p.product_name, c.category_name
 FROM products p
-INNER JOIN categories c ON p.category_id = c.category_id;
+INNER JOIN product_categories pc ON pc.product_id = p.product_id
+INNER JOIN categories c ON c.category_id = pc.category_id;
 
 -- LEFT JOIN
 SELECT c.category_name, p.product_name
 FROM categories c
-LEFT JOIN products p ON c.category_id = p.category_id;
+LEFT JOIN product_categories pc ON pc.category_id = c.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id;
 
 -- RIGHT JOIN
 SELECT p.product_name, s.supplier_name
@@ -475,7 +477,7 @@ WHERE customer_id IN (SELECT DISTINCT customer_id FROM orders);
 SELECT category_name
 FROM categories c
 WHERE EXISTS (
-    SELECT 1 FROM products p WHERE p.category_id = c.category_id
+    SELECT 1 FROM product_categories pc WHERE pc.category_id = c.category_id
 );
 
 -- Customers who have never ordered
@@ -633,7 +635,8 @@ SELECT p.product_id, p.product_name, c.category_name,
        p.price, p.stock_qty,
        CASE WHEN p.stock_qty > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS availability
 FROM products p
-JOIN categories c ON p.category_id = c.category_id;
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id;
 ```
 
 **Benefits:**
@@ -751,7 +754,7 @@ Indexes speed up data retrieval at the cost of extra storage and slower writes.
 
 ```sql
 -- Create an index
-CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_product_categories_category ON product_categories(category_id);
 
 -- Unique index
 CREATE UNIQUE INDEX idx_products_name_cat ON products(product_name, category_id);
@@ -760,7 +763,7 @@ CREATE UNIQUE INDEX idx_products_name_cat ON products(product_name, category_id)
 CREATE INDEX idx_products_in_stock ON products(product_id) WHERE stock_qty > 0;
 
 -- Drop an index
-DROP INDEX IF EXISTS idx_products_category;
+DROP INDEX IF EXISTS idx_product_categories_category;
 ```
 
 #### EXPLAIN ANALYZE
@@ -900,7 +903,8 @@ SELECT p.product_name,
        c.category_name,
        p.price
 FROM products p
-JOIN categories c ON p.category_id = c.category_id
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
 WHERE p.price > 50
   AND p.stock_qty > 0
 ORDER BY p.price DESC
@@ -930,7 +934,7 @@ LIMIT 20;
 | Tables | Plural nouns | `products`, `order_items` |
 | Columns | Singular descriptive | `product_name`, `unit_price` |
 | Primary key | `table_singular_id` | `product_id`, `order_id` |
-| Foreign key | Same as referenced PK | `category_id` in `products` |
+| Foreign keys | Same name as the PK they reference | `category_id` in `product_categories` |
 | Indexes | `idx_table_columns` | `idx_products_category` |
 | Views | `v_description` | `v_product_catalog` |
 | Constraints | `type_table_columns` | `chk_products_price`, `uq_products_name` |

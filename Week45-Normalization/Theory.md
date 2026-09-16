@@ -746,7 +746,8 @@ Let's evaluate TrailShop's current schema against 3NF.
 ```sql
 customers (customer_id PK, first_name, last_name, email, city)
 categories (category_id PK, category_name)
-products (product_id PK, product_name, category_id FK, price, stock_quantity)
+products (product_id PK, product_name, price, stock_quantity)
+product_categories (product_id FK, category_id FK, PK(product_id, category_id))
 orders (order_id PK, customer_id FK, order_date, status)
 order_items (order_item_id PK, order_id FK, product_id FK, quantity, unit_price)
 ```
@@ -766,8 +767,13 @@ order_items (order_item_id PK, order_id FK, product_id FK, quantity, unit_price)
 
 **products**:
 - PK: product_id
-- FDs: product_id → product_name, category_id, price, stock_quantity
-- No non-key attribute determines another non-key attribute.
+- FDs: product_id → product_name, price, stock_quantity
+- No category column — membership is M:N via `product_categories`.
+- **Verdict: 3NF ✓**
+
+**product_categories**:
+- PK: (product_id, category_id)
+- FDs: none beyond the key (pure junction)
 - **Verdict: 3NF ✓**
 
 **orders**:

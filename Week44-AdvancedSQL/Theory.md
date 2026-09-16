@@ -41,13 +41,14 @@ Think of it like building a bridge network. Each JOIN clause is a bridge between
 customers (customer_id PK, first_name, last_name, email, city)
 orders (order_id PK, customer_id FK, order_date, status)
 order_items (order_item_id PK, order_id FK, product_id FK, quantity, unit_price)
-products (product_id PK, product_name, category_id FK, price, stock_quantity)
+products (product_id PK, product_name, price, stock_quantity)
+product_categories (product_id FK, category_id FK, PK(product_id, category_id))
 categories (category_id PK, category_name)
 ```
 
 #### Example: "List each customer's name, the products they ordered, and the category of each product"
 
-This requires **four** tables: customers → orders → order_items → products. Optionally five if you want category names.
+This requires **six** tables if you want category names: customers → orders → order_items → products → product_categories → categories.
 
 ```sql
 SELECT
@@ -60,7 +61,8 @@ FROM customers c
 JOIN orders o        ON o.customer_id = c.customer_id
 JOIN order_items oi  ON oi.order_id = o.order_id
 JOIN products p      ON p.product_id = oi.product_id
-JOIN categories cat  ON cat.category_id = p.category_id
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id
 ORDER BY c.last_name, p.product_name;
 ```
 
@@ -70,7 +72,7 @@ ORDER BY c.last_name, p.product_name;
 2. `JOIN orders` — links each customer to their orders via `customer_id`.
 3. `JOIN order_items` — links each order to its line items via `order_id`.
 4. `JOIN products` — links each line item to its product via `product_id`.
-5. `JOIN categories` — links each product to its category via `category_id`.
+5. `JOIN product_categories` then `JOIN categories` — a product can belong to many categories, so this junction resolves the M:N.
 
 Each step narrows or expands the result depending on whether matching rows exist. With INNER JOIN (the default), only rows that match *at every step* appear in the final result.
 
@@ -101,9 +103,11 @@ SELECT
     p2.price AS price_b,
     cat.category_name
 FROM products p1
-JOIN products p2 ON p1.category_id = p2.category_id
-                AND p1.product_id < p2.product_id
-JOIN categories cat ON cat.category_id = p1.category_id
+JOIN product_categories pc1 ON pc1.product_id = p1.product_id
+JOIN products p2 ON p1.product_id < p2.product_id
+JOIN product_categories pc2 ON pc2.product_id = p2.product_id
+                             AND pc2.category_id = pc1.category_id
+JOIN categories cat ON cat.category_id = pc1.category_id
 WHERE ABS(p1.price - p2.price) <= 5.00;
 ```
 
@@ -186,7 +190,8 @@ WHERE oi.order_item_id IS NULL;
 -- Categories with no products
 SELECT cat.category_name
 FROM categories cat
-LEFT JOIN products p ON p.category_id = cat.category_id
+LEFT JOIN product_categories pc ON pc.category_id = cat.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id
 WHERE p.product_id IS NULL;
 ```
 
@@ -234,7 +239,8 @@ FROM customers c
 LEFT JOIN orders o ON o.customer_id = c.customer_id
 LEFT JOIN order_items oi ON oi.order_id = o.order_id
 LEFT JOIN products p ON p.product_id = oi.product_id
-JOIN categories cat ON cat.category_id = p.category_id;  -- This kills NULLs!
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id;  -- This kills NULLs!
 
 -- CORRECT: Use LEFT JOIN throughout
 SELECT c.first_name, p.product_name, cat.category_name
@@ -242,7 +248,8 @@ FROM customers c
 LEFT JOIN orders o ON o.customer_id = c.customer_id
 LEFT JOIN order_items oi ON oi.order_id = o.order_id
 LEFT JOIN products p ON p.product_id = oi.product_id
-LEFT JOIN categories cat ON cat.category_id = p.category_id;
+LEFT JOIN product_categories pc ON pc.product_id = p.product_id
+LEFT JOIN categories cat ON cat.category_id = pc.category_id;
 ```
 
 ---
@@ -341,18 +348,20 @@ A **correlated subquery** references columns from the outer query. It executes *
 #### Example: "Products priced above the average for their category"
 
 ```sql
-SELECT p.product_name, p.price, p.category_id
+SELECT p.product_name, p.price
 FROM products p
 WHERE p.price > (
     SELECT AVG(p2.price)
     FROM products p2
-    WHERE p2.category_id = p.category_id  -- References outer query!
+    JOIN product_categories pc2 ON pc2.product_id = p2.product_id
+    JOIN product_categories pc1 ON pc1.product_id = p.product_id
+                               AND pc1.category_id = pc2.category_id
 );
 ```
 
 For each product in the outer query, PostgreSQL:
-1. Looks at that product's `category_id`
-2. Runs the subquery to compute the average price *for that category*
+1. Finds the categories that product belongs to (via `product_categories`)
+2. Runs the subquery to compute the average price *for those categories*
 3. Compares the product's price to that average
 
 **Performance implication**: Correlated subqueries can be slow on large tables because they execute once per outer row. Often, you can rewrite them as JOINs or window functions for better performance.
@@ -371,13 +380,11 @@ WHERE customer_id IN (
 );
 
 -- Products in the "Footwear" or "Accessories" categories
-SELECT product_name, price
-FROM products
-WHERE category_id IN (
-    SELECT category_id
-    FROM categories
-    WHERE category_name IN ('Footwear', 'Accessories')
-);
+SELECT p.product_name, p.price
+FROM products p
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
+WHERE c.category_name IN ('Footwear', 'Accessories');
 ```
 
 ### 3.7 Subqueries with EXISTS and NOT EXISTS
@@ -426,7 +433,8 @@ FROM products
 WHERE price > ANY (
     SELECT p.price
     FROM products p
-    JOIN categories cat ON cat.category_id = p.category_id
+    JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id
     WHERE cat.category_name = 'Camping'
 );
 ```
@@ -443,7 +451,8 @@ FROM products
 WHERE price > ALL (
     SELECT p.price
     FROM products p
-    JOIN categories cat ON cat.category_id = p.category_id
+    JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id
     WHERE cat.category_name = 'Camping'
 );
 ```
@@ -539,9 +548,13 @@ This is another way to find "unmatched" rows, alongside LEFT JOIN + IS NULL and 
 You can add `ORDER BY` and `LIMIT` at the end, after the last SELECT:
 
 ```sql
-SELECT product_name, price FROM products WHERE category_id = 1
+SELECT p.product_name, p.price FROM products p
+JOIN product_categories pc ON pc.product_id = p.product_id
+WHERE pc.category_id = 1
 UNION
-SELECT product_name, price FROM products WHERE category_id = 2
+SELECT p.product_name, p.price FROM products p
+JOIN product_categories pc ON pc.product_id = p.product_id
+WHERE pc.category_id = 2
 ORDER BY price DESC
 LIMIT 10;
 ```
@@ -814,7 +827,8 @@ SELECT
         ELSE 'In stock'
     END AS availability
 FROM products p
-JOIN categories cat ON cat.category_id = p.category_id;
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id;
 
 -- View 2: Order details (flattened for reporting)
 CREATE VIEW order_details AS
@@ -839,7 +853,8 @@ SELECT
     COUNT(DISTINCT oi.order_item_id) AS times_ordered,
     COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS total_revenue
 FROM categories cat
-LEFT JOIN products p ON p.category_id = cat.category_id
+LEFT JOIN product_categories pc ON pc.category_id = cat.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id
 LEFT JOIN order_items oi ON oi.product_id = p.product_id
 GROUP BY cat.category_name;
 ```
@@ -898,11 +913,12 @@ You can define multiple CTEs, separated by commas. Later CTEs can reference earl
 WITH
 category_revenue AS (
     SELECT
-        p.category_id,
+        pc.category_id,
         SUM(oi.quantity * oi.unit_price) AS revenue
     FROM products p
+    JOIN product_categories pc ON pc.product_id = p.product_id
     JOIN order_items oi ON oi.product_id = p.product_id
-    GROUP BY p.category_id
+    GROUP BY pc.category_id
 ),
 avg_category_revenue AS (
     SELECT AVG(revenue) AS avg_revenue

@@ -51,7 +51,8 @@ ORDER BY price;
 ```sql
 SELECT c.category_name, COUNT(*) AS product_count
 FROM products p
-JOIN categories c ON p.category_id = c.category_id
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
 GROUP BY c.category_name
 ORDER BY product_count DESC;
 ```
@@ -76,7 +77,8 @@ ORDER BY product_count DESC;
 ```sql
 SELECT c.category_name, p.product_name, p.price
 FROM categories c
-LEFT JOIN products p ON c.category_id = p.category_id
+LEFT JOIN product_categories pc ON pc.category_id = c.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id
 ORDER BY c.category_name, p.product_name;
 ```
 </details>
@@ -100,7 +102,8 @@ ORDER BY c.category_name, p.product_name;
 ```sql
 SELECT c.category_name, AVG(p.price) AS avg_price
 FROM categories c
-JOIN products p ON c.category_id = p.category_id
+JOIN product_categories pc ON pc.category_id = c.category_id
+JOIN products p ON p.product_id = pc.product_id
 GROUP BY c.category_name
 HAVING AVG(p.price) > 100
 ORDER BY avg_price DESC;
@@ -183,7 +186,8 @@ WHERE EXISTS (
     FROM orders o
     JOIN order_items oi ON o.order_id = oi.order_id
     JOIN products p ON oi.product_id = p.product_id
-    JOIN categories cat ON p.category_id = cat.category_id
+    JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id
     WHERE o.customer_id = c.customer_id
       AND cat.category_name = 'Climbing'
 );
@@ -352,7 +356,8 @@ SELECT c.category_name,
        ROUND(AVG(p.price), 2) AS avg_price,
        SUM(p.stock_qty) AS total_stock
 FROM categories c
-JOIN products p ON c.category_id = p.category_id
+JOIN product_categories pc ON pc.category_id = c.category_id
+JOIN products p ON p.product_id = pc.product_id
 GROUP BY c.category_name
 ORDER BY c.category_name;
 ```
@@ -380,7 +385,8 @@ FROM (
     SELECT c.category_name,
            SUM(oi.quantity * oi.unit_price) AS total_revenue
     FROM categories c
-    JOIN products p ON c.category_id = p.category_id
+    JOIN product_categories pc ON pc.category_id = c.category_id
+JOIN products p ON p.product_id = pc.product_id
     JOIN order_items oi ON p.product_id = oi.product_id
     GROUP BY c.category_name
 ) AS category_revenue
@@ -766,7 +772,8 @@ JOIN categories c ON p.category_id = categories.category_id;
 ```sql
 SELECT p.product_name, c.category_name
 FROM products p
-JOIN categories c ON p.category_id = c.category_id;
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id;
 ```
 </details>
 
@@ -837,7 +844,8 @@ OFFSET 0;
 ```sql
 SELECT c.category_name, COUNT(*) AS cnt
 FROM products p
-LEFT JOIN categories c ON p.category_id = c.category_id
+LEFT JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
 GROUP BY c.category_name
 HAVING cnt > 5;
 ```
@@ -860,7 +868,8 @@ HAVING cnt > 5;
 ```sql
 SELECT c.category_name, COUNT(*) AS cnt
 FROM products p
-LEFT JOIN categories c ON p.category_id = c.category_id
+LEFT JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
 GROUP BY c.category_name
 HAVING COUNT(*) > 5;
 ```

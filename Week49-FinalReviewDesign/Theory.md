@@ -131,9 +131,10 @@ Always test with concrete examples from your domain. "Can one customer have many
 The TrailShop model includes:
 
 - **Categories** (strong entity): category_id, name, description
-- **Products** (strong entity): product_id, name, description, price, stock_quantity, category_id
+- **Products** (strong entity): product_id, name, description, price, stock_quantity
+- **ProductCategories** (junction): product_id + category_id — resolves Category M:N Product
 - **Customers** (strong entity): customer_id, first_name, last_name, email, created_at
-- **Orders** (strong entity): order_id, customer_id, order_date, status, total_amount
+- **Orders** (strong entity): order_id, customer_id, order_date, status
 - **OrderItems** (weak entity): order_id + product_id, quantity, unit_price
 - **Payments** (strong entity): payment_id, order_id, amount, payment_method, payment_date
 
@@ -383,7 +384,7 @@ CREATE TABLE categories (
 **Self-review**:
 - Why is `name` UNIQUE? Because two categories should not have the same name.
 - Why is `description` nullable? Because a category can exist without a description.
-- Why no ON DELETE concerns? Nothing references this table's PK yet — products do, see below.
+- Why no ON DELETE concerns yet? `product_categories` will reference this PK.
 
 ### 6.2 Products
 
@@ -392,18 +393,33 @@ CREATE TABLE products (
     product_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name           VARCHAR(200) NOT NULL,
     description    TEXT,
-    price          NUMERIC(10,2) NOT NULL CHECK (price >= 0),
+    price          NUMERIC(10,2) NOT NULL CHECK (price > 0),
     stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
-    category_id    INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
-    created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 **Self-review**:
 - Why `NUMERIC(10,2)` for price? Exact decimal arithmetic — never use FLOAT for money.
-- Why `ON DELETE SET NULL` for category? If a category is removed, the product should still exist — just without a category.
-- Why `CHECK (price >= 0)`? A negative price makes no business sense.
-- Why is `category_id` nullable? Because ON DELETE SET NULL requires it, and a product without a category is acceptable.
+- Why `CHECK (price > 0)`? A negative or zero price makes no business sense.
+- Why no `category_id`? A product can belong to many categories; that M:N is resolved by `product_categories`.
+
+### 6.2b Product Categories
+
+```sql
+CREATE TABLE product_categories (
+    product_id  INTEGER NOT NULL
+                REFERENCES products(product_id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL
+                REFERENCES categories(category_id) ON DELETE CASCADE,
+    PRIMARY KEY (product_id, category_id)
+);
+```
+
+**Self-review**:
+- Why a composite PK? So the same product cannot be listed twice in the same category.
+- Why `ON DELETE CASCADE` on both FKs? Link rows are meaningless without the product or the category; the other entity survives.
+- Why no extra columns? This is a pure junction — contrast with `order_items`, which stores quantity and unit_price.
 
 ### 6.3 Customers
 

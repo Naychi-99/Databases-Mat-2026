@@ -12,8 +12,8 @@ Before the exam, verify that your TrailShop database is complete and correct.
 
 Run the following checks and fix any issues:
 
-1. Confirm all 5 tables exist: `\dt`
-2. Confirm column definitions: `\d categories`, `\d customers`, `\d products`, `\d orders`, `\d order_items`
+1. Confirm all 6 tables exist: `\dt`
+2. Confirm column definitions: `\d categories`, `\d customers`, `\d products`, `\d product_categories`, `\d orders`, `\d order_items`
 3. Verify all PRIMARY KEY constraints exist
 4. Verify all FOREIGN KEY constraints exist
 5. Verify CHECK constraints on `price`, `stock`, `quantity`, `status`
@@ -22,7 +22,7 @@ Run the following checks and fix any issues:
 ### Task 1.2: Data Verification
 
 1. Run `SELECT COUNT(*) FROM table_name;` for each table — confirm you have data
-2. Run a query that joins all 5 tables to confirm relationships work:
+2. Run a query that joins all 6 tables to confirm relationships work:
 
 ```sql
 SELECT c.first_name, cat.name AS category, p.name AS product,
@@ -31,11 +31,12 @@ FROM order_items oi
 JOIN orders o ON oi.order_id = o.order_id
 JOIN customers c ON o.customer_id = c.customer_id
 JOIN products p ON oi.product_id = p.product_id
-JOIN categories cat ON p.category_id = cat.category_id
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories cat ON cat.category_id = pc.category_id
 ORDER BY c.first_name, o.order_id;
 ```
 
-3. Test referential integrity: try to INSERT a product with a non-existent category_id — confirm it fails
+3. Test referential integrity: try to INSERT into `product_categories` with a non-existent `category_id` — confirm it fails
 4. Test CHECK constraint: try to UPDATE a product price to -5 — confirm it fails
 
 ---
@@ -362,7 +363,8 @@ Explain in plain English what this query returns:
 ```sql
 SELECT c.name, COUNT(p.product_id)
 FROM categories c
-LEFT JOIN products p ON c.category_id = p.category_id
+LEFT JOIN product_categories pc ON pc.category_id = c.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id
 GROUP BY c.name
 HAVING COUNT(p.product_id) = 0;
 ```
@@ -391,9 +393,10 @@ Write a query that finds the top 3 customers by total spending, showing their fu
 ### 3.10 (Week 41 — Querying)
 Explain why this query is invalid:
 ```sql
-SELECT category_id, name, AVG(price)
-FROM products
-GROUP BY category_id;
+SELECT pc.category_id, p.name, AVG(p.price)
+FROM products p
+JOIN product_categories pc ON pc.product_id = p.product_id
+GROUP BY pc.category_id;
 ```
 
 > [!NOTE]

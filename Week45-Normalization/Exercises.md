@@ -79,7 +79,7 @@ Sample data:
 
 ### Task 1.2: Review Your Existing TrailShop Schema
 
-1. List all functional dependencies in your current TrailShop schema (all tables).
+1. List all functional dependencies in your current TrailShop schema (all tables, including `product_categories`).
 > [!NOTE]
 > ***Your SQL***
 >

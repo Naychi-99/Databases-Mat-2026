@@ -88,7 +88,7 @@ Write the following queries using subqueries:
 
 Create the following views in your TrailShop database:
 
-1. `v_product_catalog` — Shows product name, category name, price, and stock status ('In Stock', 'Low Stock' for < 5 units, 'Out of Stock' for 0).
+1. `v_product_catalog` — Shows product name, category name, price, and stock status ('In Stock', 'Low Stock' for < 5 units, 'Out of Stock' for 0). Join through `product_categories`. A product in two categories may appear twice (once per category).
 2. `v_customer_summary` — Shows each customer's full name, email, number of orders, and total spent.
 3. `v_monthly_revenue` — Shows revenue grouped by month.
 

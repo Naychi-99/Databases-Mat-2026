@@ -85,13 +85,13 @@ An index is **not** part of the table itself. It's a separate data structure tha
 
 Consider the `products` table:
 
-| product_id | name | price | stock_quantity | category_id |
-|---|---|---|---|---|
-| 1 | TrailMaster X4 | 149.99 | 12 | 1 |
-| 2 | Alpine Tent Pro | 299.00 | 8 | 2 |
-| 3 | Summit Harness | 89.50 | 25 | 3 |
-| 4 | Canyon Boots | 179.99 | 15 | 1 |
-| 5 | RidgeLine Pack | 129.00 | 20 | 4 |
+| product_id | name | price | stock_quantity |
+|---|---|---|---|
+| 1 | TrailMaster X4 | 149.99 | 12 |
+| 2 | Alpine Tent Pro | 299.00 | 8 |
+| 3 | Summit Harness | 89.50 | 25 |
+| 4 | Canyon Boots | 179.99 | 15 |
+| 5 | RidgeLine Pack | 129.00 | 20 |
 
 An index on the `name` column would conceptually look like:
 
@@ -812,8 +812,9 @@ Both inputs are sorted on the join key, then merged together in a single pass.
 EXPLAIN ANALYZE
 SELECT p.name, c.category_name
 FROM products p
-JOIN categories c ON p.category_id = c.category_id
-ORDER BY p.category_id;
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
+ORDER BY pc.category_id;
 ```
 
 ```
@@ -1024,7 +1025,7 @@ Not every column needs an index. Focus on columns that appear in:
 CREATE INDEX idx_orders_customer_id ON orders(customer_id);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON order_items(product_id);
-CREATE INDEX idx_products_category_id ON products(category_id);
+CREATE INDEX idx_product_categories_category_id ON product_categories(category_id);
 CREATE INDEX idx_payments_order_id ON payments(order_id);
 
 -- Index columns used in WHERE clauses
@@ -1193,10 +1194,10 @@ Fetching all columns forces PostgreSQL to read the full row, even if you only ne
 
 ```sql
 -- Slow: fetches all columns
-SELECT * FROM products WHERE category_id = 2;
+SELECT * FROM products WHERE price > 100;
 
 -- Fast: fetches only what you need, may enable Index Only Scan
-SELECT name, price FROM products WHERE category_id = 2;
+SELECT name, price FROM products WHERE price > 100;
 ```
 
 ### 14.2 EXISTS vs IN vs JOIN
@@ -1263,7 +1264,8 @@ SELECT
     SUM(oi.quantity * oi.unit_price) AS total_revenue
 FROM order_items oi
 JOIN products p ON oi.product_id = p.product_id
-JOIN categories c ON p.category_id = c.category_id
+JOIN product_categories pc ON pc.product_id = p.product_id
+JOIN categories c ON c.category_id = pc.category_id
 GROUP BY p.name, c.category_name;
 
 -- Query the materialized view (fast — reads precomputed data)

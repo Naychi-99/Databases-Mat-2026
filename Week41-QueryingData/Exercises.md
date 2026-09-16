@@ -116,7 +116,7 @@ Use the TrailShop database you created in Week 40. Write SQL queries to answer e
 
 ### JOIN Queries
 
-11. List all products with their category names (not just category_id). Sort by category name, then product name.
+11. List all products with their category names (join through `product_categories`). A product in two categories should appear twice. Sort by category name, then product name.
 > [!NOTE]
 > ***Your SQL***
 >
@@ -273,7 +273,7 @@ Answer in your own words:
 
 ## Exercise 3: Query Writing Exercises
 
-Write the SQL for each task. Use the TrailShop schema (categories, customers, products, orders, order_items).
+Write the SQL for each task. Use the TrailShop schema (categories, customers, products, product_categories, orders, order_items).
 
 ### Simple SELECT + WHERE
 
@@ -341,7 +341,7 @@ Write the SQL for each task. Use the TrailShop schema (categories, customers, pr
 
 ### Aggregation
 
-**3.6** — For each category_id, show the minimum, maximum, and average price. Round averages to 2 decimal places.
+**3.6** — For each category, show the category name, minimum, maximum, and average product price. Round averages to 2 decimal places. Join through `product_categories`.
 
 > [!NOTE]
 > ***Your SQL***
@@ -480,7 +480,8 @@ For each query below, explain in **plain English** what it does and what the res
 ```sql
 SELECT c.name, COUNT(p.product_id) AS num_products
 FROM categories c
-LEFT JOIN products p ON c.category_id = p.category_id
+LEFT JOIN product_categories pc ON pc.category_id = c.category_id
+LEFT JOIN products p ON p.product_id = pc.product_id
 GROUP BY c.name
 ORDER BY num_products DESC;
 ```

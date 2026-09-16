@@ -15,7 +15,7 @@ These exercises let you practice the core topics from this week: managing access
 This task expands your TrailShop database with real-world administration and security work. You will create roles, test permissions, practice backup/restore, defend against injection, and prototype a new feature using both relational and document-style design.
 
 **Tables you are working with:**
-`products`, `customers`, `orders`, `order_items`, `categories`, `payments`
+`products`, `customers`, `orders`, `order_items`, `categories`, `product_categories`, `payments`
 
 ---
 
