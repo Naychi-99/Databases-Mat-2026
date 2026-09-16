@@ -4,7 +4,7 @@
 
 Last week you learned the rules of relational databases — how tables work, what keys do, and how integrity constraints keep data trustworthy. But here's the thing: you shouldn't start building tables right away. That would be like a construction crew pouring concrete before an architect has drawn a single blueprint.
 
-Imagine TrailShop's founders walk into your office and say: "We need the database to handle products, customers, orders, categories, and stock levels. Oh, and eventually loyalty points, supplier info, reviews, and wishlists." If you jump straight into `CREATE TABLE` statements, you'll end up reworking everything three times. You need a **map** first — a visual model that captures *what* the business needs before you decide *how* to store it.
+Imagine TrailShop's founders walk into your office and say: "We need the database to handle products, customers, orders, categories, and stock levels. Oh, and eventually loyalty points, supplier info, reviews, and wishlists." If you jump straight into `CREATE TABLE` statements, you'll end up reworking everything three times. You need a **map** first — a visual model that captures _what_ the business needs before you decide _how_ to store it.
 
 That map is called a **conceptual data model**, and the most popular technique for creating one is the **Entity-Relationship (ER) model**. This week you'll learn to think like a data architect: sketching the big picture before writing a single line of SQL.
 
@@ -39,13 +39,13 @@ In software engineering, no competent team ships a large application without fir
 
 Consider this parallel:
 
-| Software Development | Database Development |
-|---|---|
-| Requirements document | Data requirements specification |
-| Architecture diagram | Conceptual data model (ER diagram) |
-| Detailed design | Logical schema (table definitions) |
-| Source code | Physical implementation (SQL DDL) |
-| Testing | Data validation and integrity checks |
+| Software Development  | Database Development                 |
+| --------------------- | ------------------------------------ |
+| Requirements document | Data requirements specification      |
+| Architecture diagram  | Conceptual data model (ER diagram)   |
+| Detailed design       | Logical schema (table definitions)   |
+| Source code           | Physical implementation (SQL DDL)    |
+| Testing               | Data validation and integrity checks |
 
 Just as you wouldn't code a complex application without a design document, you shouldn't create database tables without a data model.
 
@@ -62,9 +62,9 @@ A conceptual model prevents these problems by forcing you to think about **what 
 
 ### 1.3 What the Textbook Says
 
-*Database Design* (Watt & Eng), Chapter 5, introduces data modelling as "an iterative process" that begins at a high level of abstraction and is refined until it can be implemented. Chapter 13 describes the full database development process and places conceptual modelling as a critical early phase — one that feeds into logical design and ultimately physical implementation.
+_Database Design_ (Watt & Eng), Chapter 5, introduces data modelling as "an iterative process" that begins at a high level of abstraction and is refined until it can be implemented. Chapter 13 describes the full database development process and places conceptual modelling as a critical early phase — one that feeds into logical design and ultimately physical implementation.
 
-The key insight: **conceptual modelling is technology-independent**. You don't think about PostgreSQL, MySQL, or Oracle at this stage. You think about the *business*.
+The key insight: **conceptual modelling is technology-independent**. You don't think about PostgreSQL, MySQL, or Oracle at this stage. You think about the _business_.
 
 ### 1.4 From Last Week's Tables to This Week's Model
 
@@ -91,7 +91,7 @@ What stays the same:
 - **Customer–Order** is still 1:N (the FK remains on `orders`)
 - **Order–Product** is still M:N via **OrderItem** (Week 37 already introduced that junction)
 
-What changes for last week's FK-action work: the Category–Product foreign keys **move onto the junction**. Deleting a category no longer means "block the delete if products still point at it." It removes *links*; the products themselves survive. You will write the `CREATE TABLE` statements and `ON DELETE` actions in Week 39. Sections 10 and 12 fill in the ER details.
+What changes for last week's FK-action work: the Category–Product foreign keys **move onto the junction**. Deleting a category no longer means "block the delete if products still point at it." It removes _links_; the products themselves survive. You will write the `CREATE TABLE` statements and `ON DELETE` actions in Week 39. Sections 10 and 12 fill in the ER details.
 
 ---
 
@@ -101,7 +101,7 @@ Not all models serve the same purpose. Data models exist at different levels of 
 
 ### 2.1 The Four Levels
 
-*Database Design*, Chapter 5, describes these degrees of data abstraction:
+_Database Design_, Chapter 5, describes these degrees of data abstraction:
 
 **External Level (View Level)**
 This is the level individual users or applications see. Different people need different views of the same data.
@@ -113,9 +113,10 @@ This is the level individual users or applications see. Different people need di
 Each of these is an **external schema** (also called a subschema or user view). None of them shows the complete picture — and that's intentional. Users only see what they need.
 
 **Conceptual Level**
-This is the unified, organization-wide view of *all* the data and the relationships between data elements. It answers: "What information does the organization need to track?"
+This is the unified, organization-wide view of _all_ the data and the relationships between data elements. It answers: "What information does the organization need to track?"
 
 The conceptual schema describes:
+
 - All entities (things we store data about)
 - Their attributes (properties)
 - The relationships between entities
@@ -124,7 +125,8 @@ The conceptual schema describes:
 It does NOT describe how data is physically stored or how individual users see it.
 
 **Logical Level**
-This translates the conceptual model into the structures of a specific *type* of database system (relational, document, graph, etc.). For a relational database, this means:
+This translates the conceptual model into the structures of a specific _type_ of database system (relational, document, graph, etc.). For a relational database, this means:
+
 - Tables with columns and data types
 - Primary keys and foreign keys
 - Constraints
@@ -197,6 +199,7 @@ The warehouse team sees only low-stock products. They don't know (or care) about
 The single, unified description of all data in the organization. This is the "truth" — the complete model that all external schemas are derived from.
 
 For TrailShop, the conceptual schema would describe:
+
 - Categories, Products, ProductCategories, Customers, Orders, and OrderItems as entities
 - All their attributes
 - All the relationships and constraints between them
@@ -231,13 +234,13 @@ Physical data independence is easier to achieve and is a major benefit of using 
 
 As TrailShop grows, the database will change:
 
-| Change | Level Affected | Other Levels Affected? |
-|---|---|---|
-| Add a `suppliers` table | Conceptual + Logical | External views don't break |
-| Add an index on `orders.order_date` | Physical | Nothing else changes |
-| Create a new view for the accounting team | External | Conceptual and physical are untouched |
-| Move database to a faster server | Physical | Nothing else changes |
-| Split `products` into normalized tables | Conceptual + Logical | External views need updating (ideally not) |
+| Change                                    | Level Affected       | Other Levels Affected?                     |
+| ----------------------------------------- | -------------------- | ------------------------------------------ |
+| Add a `suppliers` table                   | Conceptual + Logical | External views don't break                 |
+| Add an index on `orders.order_date`       | Physical             | Nothing else changes                       |
+| Create a new view for the accounting team | External             | Conceptual and physical are untouched      |
+| Move database to a faster server          | Physical             | Nothing else changes                       |
+| Split `products` into normalized tables   | Conceptual + Logical | External views need updating (ideally not) |
 
 ---
 
@@ -257,7 +260,7 @@ These three concepts remain the foundation of conceptual data modelling to this 
 
 ### 4.2 Where ER Fits in the Textbook
 
-*Database Design*, Chapter 4, surveys various types of data models (hierarchical, network, relational, ER, object-oriented). The ER model is classified as a **conceptual model** — it's used for communication and planning, not for direct implementation.
+_Database Design_, Chapter 4, surveys various types of data models (hierarchical, network, relational, ER, object-oriented). The ER model is classified as a **conceptual model** — it's used for communication and planning, not for direct implementation.
 
 Chapter 8 is dedicated entirely to the ER model: entity types, relationship types, attributes, and how to build an ER diagram. We'll reference Chapter 8 extensively throughout this section.
 
@@ -306,18 +309,19 @@ A weak entity cannot be uniquely identified by its own attributes alone. It depe
 Classic example: **OrderItem**. An order item only makes sense in the context of a specific order. The attributes of an order item (like `line_number = 1`) are not unique on their own — line 1 could appear in every order. You need the combination of `order_id` + `line_number` to uniquely identify an order item.
 
 Properties of weak entities:
+
 - They always participate in an **identifying relationship** with their owner
 - Their primary key includes the owner's primary key (forming a composite key)
 - If the owner is deleted, the weak entity instances should also be deleted
 
 More examples beyond TrailShop:
 
-| Weak Entity | Owner Entity | Why It's Weak |
-|---|---|---|
-| Room | Building | Room 101 exists in many buildings; needs building_id + room_number |
-| Dependent (insurance) | Employee | A dependent is identified through the employee |
-| Chapter | Book | Chapter 3 exists in many books |
-| Transaction | Bank Account | Transaction #1 per account, not globally unique |
+| Weak Entity           | Owner Entity | Why It's Weak                                                      |
+| --------------------- | ------------ | ------------------------------------------------------------------ |
+| Room                  | Building     | Room 101 exists in many buildings; needs building_id + room_number |
+| Dependent (insurance) | Employee     | A dependent is identified through the employee                     |
+| Chapter               | Book         | Chapter 3 exists in many books                                     |
+| Transaction           | Bank Account | Transaction #1 per account, not globally unique                    |
 
 ### 5.3 Entity Classification (Extended)
 
@@ -327,6 +331,7 @@ Chapter 8 classifies entities into three categories based on their relationships
 An entity that can exist on its own, without requiring any relationship to another entity. It has its own primary key that is not derived from any other entity.
 
 In TrailShop:
+
 - `Category` — exists independently; doesn't need products to exist
 - `Customer` — exists independently; doesn't need orders to exist
 - `Product` — exists independently (it can be identified on its own even before it is assigned to any category)
@@ -335,6 +340,7 @@ In TrailShop:
 An entity whose existence depends on one or more other entities. It cannot exist without the entity it depends on. Weak entities are a specific type of dependent entity.
 
 In TrailShop:
+
 - `Order` — depends on `Customer` (an order must belong to a customer)
 - `OrderItem` — depends on both `Order` and `Product`
 
@@ -342,6 +348,7 @@ In TrailShop:
 A special kind of dependent entity that serves to provide additional detail about another entity — essentially a multivalued attribute that has been promoted to its own entity.
 
 Examples:
+
 - `ProductImage` — stores multiple images for a product (a product can have 0 to many images)
 - `PhoneNumber` — if a customer can have multiple phone numbers
 - `ProductReview` — each review characterizes a product
@@ -357,6 +364,7 @@ Characteristic entities typically have a mandatory one-to-many relationship with
 An **attribute** is a property that describes an entity. Each attribute has a **name** and a **domain** (the set of permitted values). Chapter 8 (Watt & Eng) covers attribute types in detail.
 
 For the Product entity, attributes might include:
+
 - `product_id` (identifier)
 - `name` (what it's called)
 - `price` (how much it costs)
@@ -369,6 +377,7 @@ For the Product entity, attributes might include:
 A **simple attribute** cannot be meaningfully subdivided. It holds a single, atomic value.
 
 Examples:
+
 - `price` — 149.99 is one value, not divisible into meaningful parts
 - `stock_quantity` — 42 is one value
 - `email` — "customer@example.com" (typically treated as atomic)
@@ -399,6 +408,7 @@ You don't store a single "address" column. Instead, you decompose it into separa
 A **multivalued attribute** can hold multiple values for a single entity instance.
 
 Examples:
+
 - A product might have multiple **tags**: "waterproof", "lightweight", "bestseller"
 - A customer might have multiple **phone numbers**: home, work, mobile
 - A product might have multiple **images**
@@ -411,7 +421,7 @@ Product: Alpine Pro Hiking Boots
   Tags: ["waterproof", "durable", "bestseller"]
 
   Becomes:
-  
+
   product_tags table:
   | product_id | tag          |
   |------------|--------------|
@@ -427,6 +437,7 @@ Alternatively, PostgreSQL supports array types (`TEXT[]`), but a separate table 
 A **derived attribute** is one whose value can be calculated from other attributes. It is not stored directly but computed when needed.
 
 Examples:
+
 - `age` can be derived from `date_of_birth` and today's date
 - `total_price` on an order item can be derived from `quantity * unit_price`
 - `order_total` can be derived by summing all order item totals
@@ -455,13 +466,13 @@ For weak entities, the key attribute is a **partial key** — it only uniquely i
 
 ### 6.7 Attribute Summary Table
 
-| Attribute Type | Definition | ER Notation | Relational Mapping |
-|---|---|---|---|
-| Simple | Atomic, indivisible value | Plain oval | Single column |
-| Composite | Divisible into sub-attributes | Oval with connected sub-ovals | Multiple columns |
-| Multivalued | Multiple values per instance | Double-bordered oval | Separate table |
-| Derived | Calculated from other attributes | Dashed oval | Computed in queries (usually not stored) |
-| Key | Uniquely identifies entity | Underlined attribute name | PRIMARY KEY column |
+| Attribute Type | Definition                       | ER Notation                   | Relational Mapping                       |
+| -------------- | -------------------------------- | ----------------------------- | ---------------------------------------- |
+| Simple         | Atomic, indivisible value        | Plain oval                    | Single column                            |
+| Composite      | Divisible into sub-attributes    | Oval with connected sub-ovals | Multiple columns                         |
+| Multivalued    | Multiple values per instance     | Double-bordered oval          | Separate table                           |
+| Derived        | Calculated from other attributes | Dashed oval                   | Computed in queries (usually not stored) |
+| Key            | Uniquely identifies entity       | Underlined attribute name     | PRIMARY KEY column                       |
 
 ---
 
@@ -472,11 +483,13 @@ For weak entities, the key attribute is a **partial key** — it only uniquely i
 A **relationship** is a meaningful association between two or more entities. Chapter 8 (Watt & Eng) defines a relationship type as a set of associations among entity types.
 
 In TrailShop:
-- A **Category** *classifies* many **Products**, and a **Product** can belong to many **Categories** → M:N, resolved by ProductCategory
-- A **Customer** *places* an **Order** → relationship between Customer and Order
-- An **Order** *includes* **OrderItems** → relationship between Order and OrderItem
+
+- A **Category** _classifies_ many **Products**, and a **Product** can belong to many **Categories** → M:N, resolved by ProductCategory
+- A **Customer** _places_ an **Order** → relationship between Customer and Order
+- An **Order** _includes_ **OrderItems** → relationship between Order and OrderItem
 
 Each relationship has:
+
 - A **name** (often a verb: "places", "contains", "includes")
 - A **degree** (how many entity types participate)
 - **Cardinality** (how many instances can participate)
@@ -487,6 +500,7 @@ Each relationship has:
 A **binary relationship** involves exactly two entity types. This is the most common type.
 
 Examples:
+
 - Customer **places** Order (two entities: Customer, Order)
 - Product **belongs to** Category (two entities: Product, Category — M:N, via ProductCategory)
 - Order **contains** OrderItem (two entities: Order, OrderItem)
@@ -541,10 +555,10 @@ Chapter 8 discusses this distinction in the context of strong vs weak entities �
 
 This terminology is especially important when translating to the relational model:
 
-| Type | Foreign Key Is Part of PK? | Example |
-|---|---|---|
-| **Identifying** | Yes — FK is part of the child's primary key | `order_items.order_id` is both FK and part of PK; same for `product_categories` |
-| **Non-identifying** | No — FK is just a regular column | `orders.customer_id` is FK but not part of PK |
+| Type                | Foreign Key Is Part of PK?                  | Example                                                                         |
+| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Identifying**     | Yes — FK is part of the child's primary key | `order_items.order_id` is both FK and part of PK; same for `product_categories` |
+| **Non-identifying** | No — FK is just a regular column            | `orders.customer_id` is FK but not part of PK                                   |
 
 ---
 
@@ -556,11 +570,11 @@ This terminology is especially important when translating to the relational mode
 
 The three fundamental cardinality types:
 
-| Cardinality | Meaning | TrailShop Example |
-|---|---|---|
-| **1:1** (One-to-One) | One A relates to at most one B, and vice versa | One customer has one loyalty profile |
-| **1:N** (One-to-Many) | One A relates to many Bs, but each B relates to only one A | One customer places many orders |
-| **M:N** (Many-to-Many) | One A relates to many Bs, and one B relates to many As | Many products belong to many categories; many products appear in many orders |
+| Cardinality            | Meaning                                                    | TrailShop Example                                                            |
+| ---------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **1:1** (One-to-One)   | One A relates to at most one B, and vice versa             | One customer has one loyalty profile                                         |
+| **1:N** (One-to-Many)  | One A relates to many Bs, but each B relates to only one A | One customer places many orders                                              |
+| **M:N** (Many-to-Many) | One A relates to many Bs, and one B relates to many As     | Many products belong to many categories; many products appear in many orders |
 
 ### 8.2 Mandatory vs Optional Participation
 
@@ -581,8 +595,9 @@ Some instances of the entity MAY or MAY NOT participate.
 ### 8.3 Min-Max (Structural) Notation
 
 A precise way to express participation and cardinality is the **(min, max)** notation, where:
+
 - **min** = the minimum number of times an entity instance must participate (0 = optional, 1+ = mandatory)
-- **max** = the maximum number of times an entity instance can participate (1 = at most one, N or * = unlimited)
+- **max** = the maximum number of times an entity instance can participate (1 = at most one, N or \* = unlimited)
 
 Examples for TrailShop:
 
@@ -591,6 +606,7 @@ Customer (0,N) ──── places ──── (1,1) Order
 ```
 
 Reading this:
+
 - A Customer places **0 to N** orders (optional, many possible)
 - An Order belongs to **1 and only 1** customer (mandatory, exactly one)
 
@@ -611,18 +627,21 @@ For any binary relationship, ask two questions:
 2. **"Given one B, how many As can it relate to?"** → This gives you the cardinality on the A side.
 
 Example: Customer ↔ Order
+
 1. "Given one customer, how many orders can they place?" → **Many** (0 or more)
 2. "Given one order, how many customers does it belong to?" → **One** (exactly one)
 
 Result: Customer 1:N Order
 
 Example: Category ↔ Product
+
 1. "Given one category, how many products can it have?" → **Many** (0 or more)
 2. "Given one product, how many categories can it belong to?" → **Many** (0 or more)
 
 Result: Category M:N Product (resolved through ProductCategory)
 
 Example: Product ↔ Order
+
 1. "Given one product, how many orders can it appear in?" → **Many**
 2. "Given one order, how many products can it contain?" → **Many**
 
@@ -646,43 +665,43 @@ Crow's foot notation places symbols at each end of a relationship line. The symb
 
 **Maximum cardinality symbols (outer, closest to entity):**
 
-| Symbol | Meaning |
-|---|---|
-| `──────┤` (single line / tick) | Maximum **one** |
+| Symbol                         | Meaning          |
+| ------------------------------ | ---------------- |
+| `──────┤` (single line / tick) | Maximum **one**  |
 | `──────<` (crow's foot / fork) | Maximum **many** |
 
 **Minimum cardinality symbols (inner, next to the max symbol):**
 
-| Symbol | Meaning |
-|---|---|
+| Symbol                            | Meaning                     |
+| --------------------------------- | --------------------------- |
 | `──┤` (tick / perpendicular line) | Minimum **one** (mandatory) |
-| `──O` (circle / zero) | Minimum **zero** (optional) |
+| `──O` (circle / zero)             | Minimum **zero** (optional) |
 
 ### 9.3 All Four Endpoint Combinations
 
 By combining the minimum and maximum symbols, you get four possible endpoints:
 
-| Endpoint | Min | Max | Meaning | Symbol |
-|---|---|---|---|---|
-| **Exactly one (mandatory one)** | 1 | 1 | Must participate, only once | `──┤├──` (tick + tick) |
-| **Zero or one (optional one)** | 0 | 1 | May not participate, at most once | `──O├──` (circle + tick) |
-| **One or many (mandatory many)** | 1 | N | Must participate, can be many | `──┤<──` (tick + crow's foot) |
-| **Zero or many (optional many)** | 0 | N | May not participate, can be many | `──O<──` (circle + crow's foot) |
+| Endpoint                         | Min | Max | Meaning                           | Symbol                          |
+| -------------------------------- | --- | --- | --------------------------------- | ------------------------------- |
+| **Exactly one (mandatory one)**  | 1   | 1   | Must participate, only once       | `──┤├──` (tick + tick)          |
+| **Zero or one (optional one)**   | 0   | 1   | May not participate, at most once | `──O├──` (circle + tick)        |
+| **One or many (mandatory many)** | 1   | N   | Must participate, can be many     | `──┤<──` (tick + crow's foot)   |
+| **Zero or many (optional many)** | 0   | N   | May not participate, can be many  | `──O<──` (circle + crow's foot) |
 
 ### 9.4 Complete Reference Table of Crow's Foot Combinations
 
 Here is every meaningful combination of endpoints between two entities A and B:
 
-| A side | B side | Relationship Type | Example |
-|---|---|---|---|
-| `──┤├──` (exactly one) | `──┤<──` (one or many) | 1:N mandatory both sides | Department has employees; every employee in a dept, every dept has ≥1 employee |
-| `──┤├──` (exactly one) | `──O<──` (zero or many) | 1:N mandatory A, optional B | Customer places orders; every order has a customer, a customer may have none |
-| `──O├──` (zero or one) | `──O<──` (zero or many) | 1:N optional both sides | Manager manages employees; employee may have no manager, manager may have no reports |
-| `──┤├──` (exactly one) | `──┤├──` (exactly one) | 1:1 mandatory both sides | Country has capital; every country has one, every capital belongs to one country |
-| `──┤├──` (exactly one) | `──O├──` (zero or one) | 1:1 mandatory A, optional B | Employee has parking spot; every spot assigned, employee may lack one |
-| `──O├──` (zero or one) | `──O├──` (zero or one) | 1:1 optional both sides | Employee has company car; either may exist without the other |
-| `──O<──` (zero or many) | `──O<──` (zero or many) | M:N optional both sides | Students enroll in courses; student may have no courses, course may have no students |
-| `──┤<──` (one or many) | `──┤<──` (one or many) | M:N mandatory both sides | Actors star in movies; every actor in ≥1 movie, every movie has ≥1 actor |
+| A side                  | B side                  | Relationship Type           | Example                                                                              |
+| ----------------------- | ----------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| `──┤├──` (exactly one)  | `──┤<──` (one or many)  | 1:N mandatory both sides    | Department has employees; every employee in a dept, every dept has ≥1 employee       |
+| `──┤├──` (exactly one)  | `──O<──` (zero or many) | 1:N mandatory A, optional B | Customer places orders; every order has a customer, a customer may have none         |
+| `──O├──` (zero or one)  | `──O<──` (zero or many) | 1:N optional both sides     | Manager manages employees; employee may have no manager, manager may have no reports |
+| `──┤├──` (exactly one)  | `──┤├──` (exactly one)  | 1:1 mandatory both sides    | Country has capital; every country has one, every capital belongs to one country     |
+| `──┤├──` (exactly one)  | `──O├──` (zero or one)  | 1:1 mandatory A, optional B | Employee has parking spot; every spot assigned, employee may lack one                |
+| `──O├──` (zero or one)  | `──O├──` (zero or one)  | 1:1 optional both sides     | Employee has company car; either may exist without the other                         |
+| `──O<──` (zero or many) | `──O<──` (zero or many) | M:N optional both sides     | Students enroll in courses; student may have no courses, course may have no students |
+| `──┤<──` (one or many)  | `──┤<──` (one or many)  | M:N mandatory both sides    | Actors star in movies; every actor in ≥1 movie, every movie has ≥1 actor             |
 
 ### 9.5 Reading a Crow's Foot Diagram
 
@@ -695,10 +714,12 @@ When reading a crow's foot diagram, always read **away from** the entity to dete
 ```
 
 Reading from **Customer** (left to right):
+
 - The symbols near Order are `O<` → zero or many
 - "One customer relates to **zero or many** orders"
 
 Reading from **Order** (right to left):
+
 - The symbols near Customer are `┤├` → exactly one
 - "One order belongs to **exactly one** customer"
 
@@ -710,7 +731,7 @@ In text-based diagrams (like in this material), we use these conventions:
 
 ```
 ──||──  = exactly one (mandatory one)
-──|O──  = zero or one (optional one)  
+──|O──  = zero or one (optional one)
 ──|<──  = one or many (mandatory many)
 ──O<──  = zero or many (optional many)
 ```
@@ -736,12 +757,14 @@ Last week Category–Product was 1:N (`products.category_id`). Here is why that 
 A many-to-many relationship cannot be directly implemented in a relational database. TrailShop has two of them.
 
 **Category ↔ Product (the simpler case):**
-- One **Product** can belong to many **Categories** (a rain jacket is Clothing *and* Accessories)
+
+- One **Product** can belong to many **Categories** (a rain jacket is Clothing _and_ Accessories)
 - One **Category** can contain many **Products**
 
 You can't put `category_id` in the `products` table (which category would you store when there are several?). You can't put `product_id` in the `categories` table (a category has many products).
 
 **Product ↔ Order (the same problem, plus extra data):**
+
 - One **Product** can appear in many **Orders**
 - One **Order** can contain many **Products**
 
@@ -780,6 +803,7 @@ The junction has **no extra attributes** — only the two foreign keys. Its job 
 This junction **does** carry relationship attributes: `quantity` and `unit_price` at the time of the order. Those facts belong to the pairing of an order and a product, not to either entity alone.
 
 A junction table typically includes:
+
 - Foreign key to the first entity
 - Foreign key to the second entity
 - Any attributes specific to the relationship (none for ProductCategory; `quantity` and `unit_price` for OrderItem)
@@ -789,30 +813,34 @@ A junction table typically includes:
 Chapter 8 discusses two approaches:
 
 **Option A: Composite Primary Key**
+
 ```
 ProductCategory PK = (product_id, category_id)
 OrderItem        PK = (order_id, product_id)
 ```
+
 This means a product can appear only once in a given category, and only once per order. If the customer wants 3 of the same item, you use a `quantity` column on OrderItem.
 
 **Option B: Surrogate Primary Key**
+
 ```
 OrderItem PK = order_item_id (auto-generated)
 ```
+
 Plus a unique constraint on `(order_id, product_id)` if needed. This allows more flexibility but adds an extra column.
 
 For TrailShop, we'll use Option A (composite key) for both junctions — it is cleaner and naturally prevents duplicate pairings.
 
 ### 10.4 More M:N Examples
 
-| Entity A | Entity B | Junction Table | Junction Attributes |
-|---|---|---|---|
-| Product | Category | ProductCategory | *(none — pure link)* |
-| Order | Product | OrderItem | quantity, unit_price |
-| Student | Course | Enrollment | enrollment_date, grade |
-| Actor | Movie | MovieCast | role_name, billing_order |
-| Doctor | Patient | Appointment | appointment_date, diagnosis |
-| Author | Book | BookAuthor | author_order |
+| Entity A | Entity B | Junction Table  | Junction Attributes         |
+| -------- | -------- | --------------- | --------------------------- |
+| Product  | Category | ProductCategory | _(none — pure link)_        |
+| Order    | Product  | OrderItem       | quantity, unit_price        |
+| Student  | Course   | Enrollment      | enrollment_date, grade      |
+| Actor    | Movie    | MovieCast       | role_name, billing_order    |
+| Doctor   | Patient  | Appointment     | appointment_date, diagnosis |
+| Author   | Book     | BookAuthor      | author_order                |
 
 ---
 
@@ -821,16 +849,19 @@ For TrailShop, we'll use Option A (composite key) for both junctions — it is c
 ### 11.1 Naming Conventions
 
 **Entities:**
+
 - Use **singular nouns**: `Customer` not `Customers`, `Product` not `Products`
 - Use PascalCase or UPPERCASE: `OrderItem` or `ORDER_ITEM`
 - Be specific: `Person` is vague; `Customer`, `Employee`, `Supplier` are specific
 
 **Attributes:**
+
 - Use **lowercase with underscores**: `first_name`, `order_date`, `unit_price`
 - Be descriptive: `date` is ambiguous; `order_date`, `ship_date`, `birth_date` are clear
 - Prefix foreign keys with the referenced table: `category_id` and `product_id` in `ProductCategory`
 
 **Relationships:**
+
 - Use **active verbs**: "places" (Customer places Order), "contains" (Order contains OrderItem), "classifies" (Category classifies Product)
 - Read the relationship in both directions to verify it makes sense
 
@@ -845,16 +876,16 @@ For TrailShop, we'll use Option A (composite key) for both junctions — it is c
 
 ### 11.3 Common Mistakes
 
-| Mistake | Why It's Wrong | Fix |
-|---|---|---|
-| Storing multivalued data in one attribute | Violates atomicity (1NF) | Create a separate entity/table |
-| Missing key attributes | Can't uniquely identify instances | Add a primary key attribute |
-| Vague relationship names | "has" or "uses" — too generic | Use specific verbs: "places", "belongs to" |
-| Wrong cardinality | Misunderstanding business rules | Re-read requirements, ask stakeholders |
-| Forgetting participation constraints | Unclear if participation is mandatory or optional | Always specify min cardinality |
-| M:N not resolved | Can't implement directly | Add junction entity |
-| Redundant relationships | A→B and A→C→B when one path suffices | Remove the redundant path |
-| Attributes on M:N relationships | Only valid for junction entity attributes | Move to junction entity |
+| Mistake                                   | Why It's Wrong                                    | Fix                                        |
+| ----------------------------------------- | ------------------------------------------------- | ------------------------------------------ |
+| Storing multivalued data in one attribute | Violates atomicity (1NF)                          | Create a separate entity/table             |
+| Missing key attributes                    | Can't uniquely identify instances                 | Add a primary key attribute                |
+| Vague relationship names                  | "has" or "uses" — too generic                     | Use specific verbs: "places", "belongs to" |
+| Wrong cardinality                         | Misunderstanding business rules                   | Re-read requirements, ask stakeholders     |
+| Forgetting participation constraints      | Unclear if participation is mandatory or optional | Always specify min cardinality             |
+| M:N not resolved                          | Can't implement directly                          | Add junction entity                        |
+| Redundant relationships                   | A→B and A→C→B when one path suffices              | Remove the redundant path                  |
+| Attributes on M:N relationships           | Only valid for junction entity attributes         | Move to junction entity                    |
 
 ---
 
@@ -867,11 +898,13 @@ As Section 1.4 explained, last week's sketch treated Category–Product as 1:N (
 Let's build the complete ER model for TrailShop's core business.
 
 **Category** (Strong Entity)
+
 - `category_id` (PK) — unique identifier
 - `category_name` — name of the category (e.g., "Footwear", "Camping")
 - `description` — optional text describing the category
 
 **Product** (Strong Entity)
+
 - `product_id` (PK) — unique identifier
 - `name` — product name
 - `description` — detailed product description
@@ -881,11 +914,13 @@ Let's build the complete ER model for TrailShop's core business.
 - `created_at` — when the product was added
 
 **ProductCategory** (Junction / associative entity — resolves Category M:N Product)
+
 - `product_id` (PK, FK) — references Product
 - `category_id` (PK, FK) — references Category
 - No other attributes — this is a pure link
 
 **Customer** (Strong Entity)
+
 - `customer_id` (PK) — unique identifier
 - `first_name` — customer's first name
 - `last_name` — customer's last name
@@ -898,12 +933,14 @@ Let's build the complete ER model for TrailShop's core business.
 - `registered_at` — registration timestamp
 
 **Order** (Dependent Entity)
+
 - `order_id` (PK) — unique identifier
 - `order_date` — when the order was placed
 - `status` — order status (e.g., "pending", "shipped", "delivered")
 - `shipping_address` — delivery address (could be composite)
 
 **OrderItem** (Weak Entity — depends on Order; attributed junction for Order M:N Product)
+
 - `order_id` (PK, FK) — references Order
 - `product_id` (PK, FK) — references Product
 - `quantity` — number of units ordered
@@ -911,18 +948,18 @@ Let's build the complete ER model for TrailShop's core business.
 
 ### 12.2 Relationships
 
-| Relationship | Entities | Cardinality | Participation |
-|---|---|---|---|
-| "classifies" | Category → ProductCategory | 1:N | Optional (category may be empty) |
-| "belongs to" | ProductCategory → Category | N:1 | Mandatory (identifying) |
-| "appears in" | Product → ProductCategory | 1:N | Optional (product may have no category yet) |
-| "references" | ProductCategory → Product | N:1 | Mandatory (identifying) |
-| "places" | Customer → Order | 1:N | Optional (customer may have no orders) |
-| "belongs to" | Order → Customer | N:1 | Mandatory (every order has a customer) |
-| "contains" | Order → OrderItem | 1:N | Mandatory (every order has ≥1 item) |
-| "belongs to" | OrderItem → Order | N:1 | Mandatory (identifying relationship) |
-| "references" | OrderItem → Product | N:1 | Mandatory (every item is a product) |
-| "appears in" | Product → OrderItem | 1:N | Optional (product may not be ordered yet) |
+| Relationship | Entities                   | Cardinality | Participation                               |
+| ------------ | -------------------------- | ----------- | ------------------------------------------- |
+| "classifies" | Category → ProductCategory | 1:N         | Optional (category may be empty)            |
+| "belongs to" | ProductCategory → Category | N:1         | Mandatory (identifying)                     |
+| "appears in" | Product → ProductCategory  | 1:N         | Optional (product may have no category yet) |
+| "references" | ProductCategory → Product  | N:1         | Mandatory (identifying)                     |
+| "places"     | Customer → Order           | 1:N         | Optional (customer may have no orders)      |
+| "belongs to" | Order → Customer           | N:1         | Mandatory (every order has a customer)      |
+| "contains"   | Order → OrderItem          | 1:N         | Mandatory (every order has ≥1 item)         |
+| "belongs to" | OrderItem → Order          | N:1         | Mandatory (identifying relationship)        |
+| "references" | OrderItem → Product        | N:1         | Mandatory (every item is a product)         |
+| "appears in" | Product → OrderItem        | 1:N         | Optional (product may not be ordered yet)   |
 
 A product is not required to have a category at the database level. Enforcing "at least one category" would need an application rule or a trigger — a foreign key alone cannot require a child row to exist.
 
@@ -930,37 +967,37 @@ A product is not required to have a category at the database level. Enforcing "a
 
 ```
 ┌─────────────────┐         ┌──────────────────────┐         ┌─────────────────────┐
-│    CATEGORY      │         │  PRODUCT_CATEGORY     │         │      PRODUCT         │
+│    CATEGORY     │         │  PRODUCT_CATEGORY    │         │      PRODUCT        │
 ├─────────────────┤         ├──────────────────────┤         ├─────────────────────┤
-│ category_id (PK)│         │ product_id (PK, FK)  │         │ product_id (PK)      │
-│ category_name   │         │ category_id (PK, FK) │         │ name                 │
-│ description     │         │                      │         │ description          │
-└────────┬────────┘         └──────────┬───────────┘         │ price                │
-         │                             │                     │ weight_kg            │
-         │  1        classifies      N │                     │ stock_quantity       │
-         └─────────────────────────────┘                     │ created_at           │
-                                                             └──────────┬──────────┘
-                                                                        │
+│ category_id (PK)│         │ product_id (PK, FK)  │         │ product_id (PK)     │
+│ category_name   │         │ category_id (PK, FK) │         │ name                │
+│ description     │         │                      │         │ description         │
+└────────┬────────┘         └──────────┬─────┬─────┘         │ price               │
+         │                             │     │               │ weight_kg           │
+         │  1        classifies      N │     │               │ stock_quantity      │
+         └─────────────────────────────┘     │               │ created_at          │
+                                             │ N  Appears  1 └───┬──────┬──────────┘
+                                             └───────────────────┘      │
 ┌─────────────────┐         ┌─────────────────────┐                     │
-│    CUSTOMER      │         │       ORDER          │                     │
+│    CUSTOMER     │         │       ORDER         │                     │
 ├─────────────────┤         ├─────────────────────┤                     │
-│ customer_id (PK)│         │ order_id (PK)        │                     │
-│ first_name      │         │ order_date           │                     │
-│ last_name       │         │ status               │                     │
-│ email           │         │ shipping_address     │                     │
-│ phone           │         │ customer_id (FK)     │                     │
-│ street          │         │                      │                     │
-│ city            │         └──────────┬───────────┘                     │
-│ postal_code     │                    │                                 │
-│ country         │                    │ 1                               │
-│ registered_at   │                    │ contains                        │
-│                 │                    │ N                               │
-└────────┬────────┘         ┌──────────┴───────────┐                     │
-         │                  │     ORDER_ITEM        │                     │
-         │  1    places   N │ (weak entity)         │                     │
-         └─────────────────>├──────────────────────┤                     │
-                            │ order_id (PK, FK)    │                     │
-                            │ product_id (PK, FK)  │<────────────────────┘
+│ customer_id (PK)│         │ order_id (PK)       │                     │
+│ first_name      │         │ order_date          │                     │
+│ last_name       │         │ status              │                     │
+│ email           │         │ shipping_address    │                     │
+│ phone           │         │ customer_id (FK)    │                     │
+│ street          │         │                     │                     │
+│ city            │         └──────────┬──────────┘                     │
+│ postal_code     │                    │                                │
+│ country         │                    │ 1                              │
+│ registered_at   │                    │ contains                       │
+│                 │                    │ N                              │
+└────────┬────────┘         ┌──────────┴───────────┐                    │
+         │                  │     ORDER_ITEM       │                    │
+         │  1    places   N │ (weak entity)        │                    │
+         └─────────────────>├──────────────────────┤                    │
+                            │ order_id (PK, FK)    │                    │
+                            │ product_id (PK, FK)  │<───────────────────┘
                             │ quantity             │
                             │ unit_price           │
                             └──────────────────────┘
@@ -976,6 +1013,7 @@ Product  ──||──────O<── OrderItem
 ```
 
 Reading:
+
 - "Each product–category link belongs to exactly one category and exactly one product. A category may have zero or many products. A product may belong to zero or many categories."
 - "Each order belongs to exactly one customer. Each customer has zero or many orders."
 - "Each order item belongs to exactly one order. Each order has one or many order items."
@@ -987,7 +1025,7 @@ Chapter 13 (Watt & Eng) provides guidelines for database design projects. Here a
 
 1. **Why a ProductCategory junction?** — A product can belong to several categories. A 1:N foreign key on Product cannot store that. The junction has no extra attributes; it only records the pairing.
 
-2. **Why `unit_price` in OrderItem?** — Product prices change over time. We store the price *at the time of the order* to preserve historical accuracy. If we just referenced the current product price, old orders would show wrong totals.
+2. **Why `unit_price` in OrderItem?** — Product prices change over time. We store the price _at the time of the order_ to preserve historical accuracy. If we just referenced the current product price, old orders would show wrong totals.
 
 3. **Why composite PK for both junctions?** — `(product_id, category_id)` prevents the same product being listed twice in one category. `(order_id, product_id)` prevents the same product appearing twice in one order. The `quantity` attribute handles "3 of the same item."
 
@@ -997,51 +1035,53 @@ Chapter 13 (Watt & Eng) provides guidelines for database design projects. Here a
 
 6. **Why `weight_kg` is optional?** — Some products (like gift cards or digital items) might not have a meaningful weight.
 
-7. **Why is a product allowed to have zero categories?** — Foreign keys can require that *if* a link exists it is valid, but they cannot require that a child row exists. "At least one category" would need a trigger or an application check.
+7. **Why is a product allowed to have zero categories?** — Foreign keys can require that _if_ a link exists it is valid, but they cannot require that a child row exists. "At least one category" would need a trigger or an application check.
 
 ---
 
 ## Key Terms
 
-| Term | Definition |
-|---|---|
-| **Data model** | An abstract representation of data structures, relationships, and constraints |
-| **Conceptual model** | A high-level, technology-independent model of business data and relationships |
-| **Logical model** | A model that maps conceptual structures to a specific data model type (e.g., relational) |
-| **Physical model** | A model that specifies storage details for a specific DBMS |
-| **Three-schema architecture** | ANSI-SPARC framework with external, conceptual, and internal levels |
-| **Data independence** | Ability to change one schema level without affecting others |
-| **Entity** | A real-world thing about which data is stored |
-| **Entity type** | A collection of entities sharing the same attributes |
-| **Entity instance** | One specific occurrence of an entity type |
-| **Strong entity** | An entity that can be uniquely identified by its own attributes |
-| **Weak entity** | An entity that depends on another entity for identification |
-| **Attribute** | A property that describes an entity |
-| **Simple attribute** | An atomic, indivisible attribute |
-| **Composite attribute** | An attribute that can be subdivided into meaningful parts |
-| **Multivalued attribute** | An attribute that can hold multiple values per entity instance |
-| **Derived attribute** | An attribute whose value is computed from other attributes |
-| **Key attribute** | An attribute that uniquely identifies an entity instance |
-| **Relationship** | A meaningful association between entity types |
-| **Binary relationship** | A relationship between two entity types |
-| **Unary relationship** | A relationship where an entity type relates to itself |
-| **Ternary relationship** | A relationship involving three entity types |
-| **Identifying relationship** | A relationship where the child's PK includes the parent's PK |
-| **Cardinality** | The maximum number of instances in a relationship (1:1, 1:N, M:N) |
-| **Participation** | Whether entity instances must (mandatory) or may (optional) participate |
-| **Crow's foot notation** | An ER diagram notation using fork symbols to show cardinality |
-| **Junction table** | A table that resolves an M:N relationship into two 1:N relationships |
-| **ER diagram** | A visual representation of entities, attributes, and relationships |
+| Term                          | Definition                                                                               |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| **Data model**                | An abstract representation of data structures, relationships, and constraints            |
+| **Conceptual model**          | A high-level, technology-independent model of business data and relationships            |
+| **Logical model**             | A model that maps conceptual structures to a specific data model type (e.g., relational) |
+| **Physical model**            | A model that specifies storage details for a specific DBMS                               |
+| **Three-schema architecture** | ANSI-SPARC framework with external, conceptual, and internal levels                      |
+| **Data independence**         | Ability to change one schema level without affecting others                              |
+| **Entity**                    | A real-world thing about which data is stored                                            |
+| **Entity type**               | A collection of entities sharing the same attributes                                     |
+| **Entity instance**           | One specific occurrence of an entity type                                                |
+| **Strong entity**             | An entity that can be uniquely identified by its own attributes                          |
+| **Weak entity**               | An entity that depends on another entity for identification                              |
+| **Attribute**                 | A property that describes an entity                                                      |
+| **Simple attribute**          | An atomic, indivisible attribute                                                         |
+| **Composite attribute**       | An attribute that can be subdivided into meaningful parts                                |
+| **Multivalued attribute**     | An attribute that can hold multiple values per entity instance                           |
+| **Derived attribute**         | An attribute whose value is computed from other attributes                               |
+| **Key attribute**             | An attribute that uniquely identifies an entity instance                                 |
+| **Relationship**              | A meaningful association between entity types                                            |
+| **Binary relationship**       | A relationship between two entity types                                                  |
+| **Unary relationship**        | A relationship where an entity type relates to itself                                    |
+| **Ternary relationship**      | A relationship involving three entity types                                              |
+| **Identifying relationship**  | A relationship where the child's PK includes the parent's PK                             |
+| **Cardinality**               | The maximum number of instances in a relationship (1:1, 1:N, M:N)                        |
+| **Participation**             | Whether entity instances must (mandatory) or may (optional) participate                  |
+| **Crow's foot notation**      | An ER diagram notation using fork symbols to show cardinality                            |
+| **Junction table**            | A table that resolves an M:N relationship into two 1:N relationships                     |
+| **ER diagram**                | A visual representation of entities, attributes, and relationships                       |
 
 ---
 
 ## Reading Assignments
 
 **Required:**
-- *Database Design*, 2nd Edition — Chapters 5 (Data Modelling), 8 (ER Data Model), and 9 (Cardinality)
+
+- _Database Design_, 2nd Edition — Chapters 5 (Data Modelling), 8 (ER Data Model), and 9 (Cardinality)
 - Chapter 4 (Types of Data Models) — Sections on the ER model
 
 **PostgreSQL Reference (for context — implementation comes next week):**
+
 - PostgreSQL Docs: Data Definition — https://www.postgresql.org/docs/current/ddl.html
 
 ---
@@ -1051,7 +1091,7 @@ Chapter 13 (Watt & Eng) provides guidelines for database design projects. Here a
 - Peter Chen's original 1976 paper: "The Entity-Relationship Model: Toward a Unified View of Data" — https://dl.acm.org/doi/10.1145/320434.320440
 - Lucidchart: ER Diagram Tutorial — https://www.lucidchart.com/pages/er-diagrams
 - Visual Paradigm: ER Diagram Notation Reference — https://www.visual-paradigm.com/guide/data-modeling/what-is-entity-relationship-diagram/
-- *Database Design*, 2nd Edition — Chapter 13 (Database Development Process) for the broader context of where ER modelling fits
+- _Database Design_, 2nd Edition — Chapter 13 (Database Development Process) for the broader context of where ER modelling fits
 
 ---
 
