@@ -58,7 +58,56 @@ Verify that your constraints work by attempting at least 2 invalid inserts and s
 > ***Your SQL***
 >
 > ```sql
-> -- Paste key CREATE TABLE statements or link to your .sql file contents here
+> -- Paste key CREATE TABLE sta-============================================================================
+-- EXERCISE 1: TrailShop Project Schema
+-- ============================================================================
+
+CREATE TABLE categories (
+    category_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT
+);
+
+CREATE TABLE customers (
+    customer_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products (
+    product_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+    stock_quantity INT NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE product_categories (
+    product_id INT NOT NULL REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    category_id INT NOT NULL REFERENCES categories(category_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    PRIMARY KEY (product_id, category_id)
+);
+
+CREATE TABLE orders (
+    order_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_id INT NOT NULL REFERENCES customers(customer_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    order_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'processing', 'shipped', 'delivered', 'cancelled')),
+    shipping_address TEXT NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (total_amount >= 0)
+);
+
+CREATE TABLE order_items (
+    order_id INT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    product_id INT NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
+    PRIMARY KEY (order_id, product_id)
+);
 >
 >
 > ```
@@ -66,7 +115,15 @@ Verify that your constraints work by attempting at least 2 invalid inserts and s
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Paste written justifications for data types, FK actions, and design decisions here.)*
+> *(Data Types:
+> Numeric -exact decimal values,no floating-point errors
+> TIMESTAMPTZ - stores UTC + auto timezone conversion, no ambiguity
+> INTEGER - small, fast, perfect for whole-number counts.
+> FK Actions:
+> CASCADE for order_items & product_categories - delete together when parent is gone
+> RESTRICT for orders.customer_id & order_items.product_id - block delete if history
+> exists.
+> Extra Decision: Added CHECK for status values & DEFAULT CURRENT_TIMESTAMP for audit.)*
 >
 >
 >
@@ -81,7 +138,9 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(The seven phases are Requirements Analysis, Conceptual Design, Logical Design, Schema
+> Refinement (Normalization), Physical Design, Implementation, and Maintenance; this
+> week's focus is Logical Database Design..)*
 >
 >
 >
@@ -92,7 +151,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Put FK in the "many" table. Each child has exactly one parent, so one FK field links
+> all children efficiently..)*
 >
 >
 >
@@ -103,7 +163,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Junction table = connects two M:N tables. Needed when both sides can relate to many →
+> e.g., student_course links students ↔ courses.)*
 >
 >
 >
@@ -114,7 +175,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Put FK on the side where the relationship is mandatory or where it's more frequently
+> accessed. Add UNIQUE to enforce 1:1..)*
 >
 >
 >
@@ -125,7 +187,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Weak entity has no independent PK — depends on another. Its PK = parent PK + its own
+> partial key..)*
 >
 >
 >
@@ -136,7 +199,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Weak entity has no independent PK — depends on another. Its PK = parent PK + its own
+> partial key..)*
 >
 >
 >
@@ -146,7 +210,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *( TIMESTAMP = no timezone info. TIMESTAMPTZ = UTC internally + converts on display. Use
+> TIMESTAMPTZ always)*
 >
 
 
@@ -156,7 +221,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(CASCADE = delete/update children automatically. RESTRICT = block if children exist.
+> Use CASCADE for dependent rows, RESTRICT to protect history.)*
 >
 
 
@@ -166,7 +232,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(Can't add one entity without adding another. Fix: proper normalization → separate
+> tables.)*
 >
 
 
@@ -176,7 +243,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *( Natural key = real-world data (e.g. email) → meaningful. Surrogate key = system
+> generated ID → never changes.)*
 >
 
 
@@ -187,7 +255,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *( PostgreSQL auto-lowercases unquoted names. snake_case avoids quotes & keeps it
+> portable..)*
 >
 >
 >
@@ -197,7 +266,8 @@ Answer each question in 2–4 sentences. Reference the relevant theory section.
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Write your answer here.)*
+> *(SET NULL → set FK to NULL instead of deleting rows. Use when relationship is optional
+> (e.g. employee without a project)..)*
 >
 
 
@@ -240,15 +310,88 @@ A hotel booking system has the following entities and relationships:
 > ***Your SQL***
 >
 > ```sql
-> -- Write your CREATE TABLE statements here
->
+> -- Write your CREATE TABLE statements he-- ============================================================================
+>DROP TABLE IF EXISTS booking_services CASCADE;
+DROP TABLE IF EXISTS booking_rooms CASCADE;
+DROP TABLE IF EXISTS services CASCADE;
+DROP TABLE IF EXISTS bookings CASCADE;
+DROP TABLE IF EXISTS guests CASCADE;
+DROP TABLE IF EXISTS rooms CASCADE;
+DROP TABLE IF EXISTS hotels CASCADE;
+
+-- ============================================================================
+-- EXERCISE 3: Hotel Booking System Schema
+-- ============================================================================
+
+CREATE TABLE hotels (
+    hotel_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    star_rating INT CHECK (star_rating BETWEEN 1 AND 5),
+    phone VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE rooms (
+    hotel_id INT NOT NULL REFERENCES hotels(hotel_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    room_number VARCHAR(10) NOT NULL,
+    room_type VARCHAR(50) NOT NULL,
+    floor INT NOT NULL CHECK (floor >= 0),
+    price_per_night NUMERIC(10, 2) NOT NULL CHECK (price_per_night >= 0),
+    has_balcony BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (hotel_id, room_number)
+);
+
+CREATE TABLE guests (
+    guest_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(30) NOT NULL,
+    passport_number VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE bookings (
+    booking_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    guest_id INT NOT NULL REFERENCES guests(guest_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    check_in_date DATE NOT NULL,
+    check_out_date DATE NOT NULL,
+    total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'checked_in', 'completed')),
+    CHECK (check_out_date > check_in_date)
+);
+
+CREATE TABLE services (
+    service_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL CHECK (price >= 0)
+);
+
+CREATE TABLE booking_rooms (
+    booking_id INT NOT NULL REFERENCES bookings(booking_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    hotel_id INT NOT NULL,
+    room_number VARCHAR(10) NOT NULL,
+    PRIMARY KEY (booking_id, hotel_id, room_number),
+    FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE booking_services (
+    booking_id INT NOT NULL REFERENCES bookings(booking_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    service_id INT NOT NULL REFERENCES services(service_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    service_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    PRIMARY KEY (booking_id, service_id, service_date)
+);
 >
 > ```
 
 > [!NOTE]
 > ***Your Answer***
 >
-> *(Explain why Room is a weak entity and how its PK reflects this.)*
+> *(Room is a weak entity because a room number (like "101") is not globally unique on its
+>  own and cannot exist independently of a specific hotel. Its primary key is a composite
+> key composed of the parent hotel's foreign key (hotel_id) combined with its local
+> discriminator (room_number).)*
 >
 >
 >
@@ -267,21 +410,21 @@ For each column described below, choose the best PostgreSQL data type and write 
 
 | # | Column Description | Your Data Type | Justification |
 |---|---|---|---|
-| 1 | Employee salary (exact, up to €999,999.99) | | |
-| 2 | Number of items in stock (never negative, max ~50,000) | | |
-| 3 | Whether a user's email is verified | | |
-| 4 | Customer's date of birth | | |
-| 5 | Product description (variable length, could be several paragraphs) | | |
-| 6 | Country code (always exactly 2 letters, like "FI", "US") | | |
-| 7 | IP address of a login attempt | | |
-| 8 | Order total (exact, up to €9,999,999.99) | | |
-| 9 | GPS latitude of a store location | | |
-| 10 | A unique identifier for API tokens that must be globally unique across distributed systems | | |
-| 11 | Duration of a video in seconds (always a whole number) | | |
-| 12 | Timestamp of when a record was last modified (users in multiple time zones) | | |
-| 13 | A Finnish phone number like "+358 40 123 4567" | | |
-| 14 | A percentage discount (0.00% to 100.00%) | | |
-| 15 | A product's color options (e.g., a product comes in "red", "blue", "green") | | |
+| 1 | Employee salary (exact, up to €999,999.99) | NUMERIC(10,2)|Stores exact decimal values; avoids floating-point rounding errors — essential for currency. |
+| 2 | Number of items in stock (never negative, max ~50,000) |	INTEGER | Efficient whole-number storage; easily covers the range; add CHECK (col >= 0) to prevent negatives.|
+| 3 | Whether a user's email is verified | 	BOOLEAN |Native true/false type; compact and clearly expresses a binary state. |
+| 4 | Customer's date of birth | DATE | Stores only date without time; ideal for birthdays and validates calendar values automatically. |
+| 5 | Product description (variable length, could be several paragraphs) | TEXT | Unlimited length; efficient storage with no arbitrary character limit. |
+| 6 | Country code (always exactly 2 letters, like "FI", "US") | 	CHAR(2) | Fixed-length type enforces exactly 2 characters; matches ISO country code format. |
+| 7 | IP address of a login attempt | INET | PostgreSQL native type; validates IP format and supports network-based queries. |
+| 8 | Order total (exact, up to €9,999,999.99) | NUMERIC(12,2) | Exact decimal arithmetic; sufficient precision and range for large monetary values. |
+| 9 | GPS latitude of a store location | NUMERIC(9,6) | Preserves sub-meter precision; avoids rounding drift common with floating-point types.|
+| 10 | A unique identifier for API tokens that must be globally unique across distributed systems | UUID | Standard 128-bit format; designed for collision-free global identification.|
+| 11 | Duration of a video in seconds (always a whole number) |INTEGER | Compact and fast for whole numbers; no fractional values needed.|
+| 12 | Timestamp of when a record was last modified (users in multiple time zones) |TIMESTAMPTZ | Stores in UTC internally and converts on display; removes timezone ambiguity.|
+| 13 | A Finnish phone number like "+358 40 123 4567" |VARCHAR(30) | Preserves formatting, spaces, and leading characters; phone numbers are not mathematically operated on. |
+| 14 | A percentage discount (0.00% to 100.00%) | NUMERIC(5,2) | Exact decimal percentages; add CHECK (col BETWEEN 0 AND 100) to enforce valid range.|
+| 15 | A product's color options (e.g., a product comes in "red", "blue", "green") | VARCHAR(20) or ENUM| ENUM restricts to allowed values directly; VARCHAR offers flexibility if options expand later.|
 
 ---
 
@@ -305,7 +448,11 @@ For each business rule below, write the appropriate PostgreSQL constraint. Provi
 > ***Your SQL***
 >
 > ```sql
-> -- Write constraints 1–5 here
+> ALTER TABLE products ADD CONSTRAINT chk_weight_positive CHECK (weight IS NULL OR weight > 0);
+ALTER TABLE customers ALTER COLUMN email SET NOT NULL;
+ALTER TABLE products ADD CONSTRAINT uq_product_name UNIQUE (name);
+ALTER TABLE employees ALTER COLUMN hire_date SET DEFAULT CURRENT_DATE;
+ALTER TABLE orders ADD CONSTRAINT chk_order_status CHECK (status IN ('new', 'confirmed', 'shipped', 'delivered', 'returned'));
 >
 >
 > ```
@@ -322,7 +469,9 @@ For each business rule below, write the appropriate PostgreSQL constraint. Provi
 > ***Your SQL***
 >
 > ```sql
-> -- Write constraints 6–8 here
+> ALTER TABLE flights ADD CONSTRAINT chk_arrival_after_departure CHECK (arrival_time > departure_time);
+ALTER TABLE enrollments ADD CONSTRAINT uq_student_course UNIQUE (student_id, course_id);
+ALTER TABLE discounts ADD CONSTRAINT chk_discount_percentage CHECK (discount_percentage BETWEEN 0.00 AND 100.00);
 >
 >
 > ```
@@ -341,7 +490,10 @@ For each business rule below, write the appropriate PostgreSQL constraint. Provi
 > ***Your SQL***
 >
 > ```sql
-> -- Write constraints 9–12 here
+> ALTER TABLE employees ADD CONSTRAINT fk_employees_department FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL;
+ALTER TABLE orders ADD CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT;
+ALTER TABLE posts ADD CONSTRAINT fk_posts_author FOREIGN KEY (author_id) REFERENCES authors(author_id) ON DELETE CASCADE;
+ALTER TABLE enrollments ADD CONSTRAINT fk_enrollments_course FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE;
 >
 >
 > ```
